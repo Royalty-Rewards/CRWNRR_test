@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "../math/SafeMath.sol";
-import "../ownership/Ownable.sol";
+import "zeppelin-solidity/contracts/math/SafeMath.sol";
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
 /**
@@ -10,7 +10,7 @@ import "../ownership/Ownable.sol";
  * is in progress. Supports refunding the money if crowdsale fails,
  * and forwarding it if crowdsale is successful.
  */
-contract RefundVault is Ownable {
+contract CRWNRR_RefundVault is Ownable {
   using SafeMath for uint256;
 
   enum State { Active, Refunding, Closed }
@@ -23,7 +23,7 @@ contract RefundVault is Ownable {
   event RefundsEnabled();
   event Refunded(address indexed beneficiary, uint256 weiAmount);
 
-  function RefundVault(address _wallet) public {
+  function CRWNRR_RefundVault(address _wallet) public {
     require(_wallet != address(0));
     wallet = _wallet;
     state = State.Active;

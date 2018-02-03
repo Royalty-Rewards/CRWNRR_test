@@ -1,6 +1,6 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.18;
 
-import "../ownership/Heritable.sol";
+import "zeppelin-solidity/contracts/ownership/Heritable.sol";
 
 
 /**

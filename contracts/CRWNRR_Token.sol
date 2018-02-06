@@ -11,7 +11,4 @@ contract CRWNRR_Token is MintableToken {
   // 18 decimals is the strongly suggested default, avoid changing it
   uint256 public totalSupply = 88888888;
 
-  function CRWNRR_Token() public {
-    balances[msg.sender] = totalSupply;
-  }
 }

@@ -1,13 +1,12 @@
 // Import the page's CSS. Webpack will know what to do with it.
-// import "./app.css";
+import "./app.css";
 import $ from "jquery";
-import style from "style-loader!../node_modules/bootstrap/dist/css/bootstrap.css";
-import WalletGenerator from "./components/wallet-generator/wallet-generator";
-import ContractGenerator from "./components/contract-generator/contract-generator";
+import "../../../node_modules/bootstrap/dist/css/bootstrap.css";
+import NavBar from "../dashboard/dashboard";
+import WalletGenerator from "../wallet-generator/wallet-generator";
+// import ContractGenerator from "../contract-generator/contract-generator";
 import Web3 from "web3";
 import ethers from "ethers";
-// import { default as Web3} from 'web3';
-// import { default as contract } from 'truffle-contract'
 
 export default class App
 {
@@ -18,22 +17,29 @@ export default class App
 
   start()
   {
+    $("body").append(new NavBar());
     $("body").append(new WalletGenerator());
-    $("body").append(new ContractGenerator());
+    // $("body").append(new ContractGenerator());
     // Connect to the network
-  var provider = ethers.providers.getDefaultProvider();
-
-  // Create a wallet to deploy the contract with
-  var privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
-  var wallet = new ethers.Wallet(privateKey, provider);
-
-  // Send the transaction
-  var sendPromise = wallet.sendTransaction(deployTransaction);
-
-  // Get the transaction
-  sendPromise.then(function(transaction) {
-      console.log(transaction);
-  });
+    // let provider = new providers.Web3Provider( window.web3.currentProvider);
+    // let wallet CRWNRR_Token.new({from: creator});
+    // // let provider = ethers.providers.getDefaultProvider();
+    // let contract = new ethers.Contract(address, abi, provider);
+    // // Create a wallet to deploy the contract with
+    // let privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
+    // let wallet = new ethers.Wallet(privateKey, provider);
+    //
+    // // Send the transaction
+    // let sendPromise = wallet.sendTransaction(deployTransaction);
+    // // Get the transaction
+    // sendPromise.then(function(transaction) {
+    //     console.log(transaction);
+    // });
+    //
+    // web3Provider.listAccounts().then(function(accounts) {
+    //     var signer = web3Provider.getSigner(accounts[1]);
+    //     console.log(signer);
+    // });
   }
 
 }

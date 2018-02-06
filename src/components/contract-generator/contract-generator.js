@@ -1,5 +1,4 @@
 import "document-register-element";
-import CodeMirror from "codemirror";
 import $ from "jquery";
 import template from "./contract-generator.html";
 

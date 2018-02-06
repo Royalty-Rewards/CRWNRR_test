@@ -143,7 +143,7 @@ module.exports = {
       },
       // "file" loader for fonts
       {
-        test: /\.woff$/,
+        test: /\.(jpg|png|bmp|ttf)$/,
         loader: 'file-loader',
         query: {
           name: 'fonts/[name].[hash].[ext]'

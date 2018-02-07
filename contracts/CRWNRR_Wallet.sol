@@ -4,8 +4,8 @@ import "zeppelin-solidity/contracts/ownership/Heritable.sol";
 
 contract CRWNRR_Wallet is Heritable
 {
-  /* enum ACCOUNT_TYPE {ETHER, CRWNRR}
-  mapping (uint256 => mapping address) internal CRWNRRAccounts;
+  enum ACCOUNT_TYPE {ETHER, CRWNRR}
+  /* mapping (uint256 => mapping address) internal CRWNRRAccounts;
   mapping (uint256 => mapping address) internal EtherAccounts; */
   event Sent(address indexed payee, uint256 amount, uint256 balance);
   event Received(address indexed payer, uint256 amount, uint256 balance);
@@ -14,7 +14,7 @@ contract CRWNRR_Wallet is Heritable
   /**
    * @dev wallet can receive funds.
    */
-  function receiveFrom() public payable {
+  function payable {
     Received(msg.sender, msg.value, this.balance);
   }
 

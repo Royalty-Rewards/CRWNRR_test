@@ -10,12 +10,13 @@ contract('CRWNRR_Wallet_Test', function (accounts) {
   });
 
   it('should check if the owner lives', async function () {
-    let ownerLives = await wallet.sendTo(accounts[1], amountToSend).watch();
-    assert.equal(ownerLives, true);
+    let created = await wallet.created(num);
+    assert.equal(num, 1000);
   });
+  //
+  // it('should return Sent event after transaction happens', async function () {
+  //   let sent = await wallet.Sent(payee, amount, balance)
+  //   assert.equal(amount, amountToSend);
+  // });
 
-  it('should return Sent event after transaction happens', async function () {
-    let sent = await wallet.Sent(payee, amount, balance)
-    assert.equal(amount, amountToSend);
-  });
 });

@@ -9,15 +9,18 @@ contract CRWNRR_Wallet is Heritable
   mapping (uint256 => mapping address) internal EtherAccounts; */
   event Sent(address indexed payee, uint256 amount, uint256 balance);
   event Received(address indexed payer, uint256 amount, uint256 balance);
+  event created(uint256 timeout);
 
-  function CRWNRR_Wallet(uint256 _heartbeatTimeout) Heritable(_heartbeatTimeout) public {}
+  function CRWNRR_Wallet(uint256 _heartbeatTimeout) Heritable(_heartbeatTimeout) public
+  {
+    created(_heartbeatTimeout);
+  }
   /**
    * @dev wallet can receive funds.
    */
-  function payable {
-    Received(msg.sender, msg.value, this.balance);
-  }
-
+   function () public payable {
+     Received(msg.sender, msg.value, this.balance);
+   }
   /* function addAccount(ACCOUNT_TYPE type, address accountAddress, uint256 derivedKey) public onlyOwner
   {
     if(type == ETHER)

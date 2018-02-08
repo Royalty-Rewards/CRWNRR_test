@@ -18,7 +18,7 @@ export default class App
   start()
   {
     $("body").append(new NavBar());
-    $("body").append(new WalletGenerator());
+    // $("body").append(new WalletGenerator());
     // $("body").append(new ContractGenerator());
     // Connect to the network
     // let provider = new providers.Web3Provider( window.web3.currentProvider);

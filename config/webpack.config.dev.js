@@ -61,7 +61,6 @@ module.exports = {
     // This is the URL that app is served from. We use "/" in development.
     publicPath: publicPath
   },
-
   module: {
     // First, run the linter.
     // It's important to do this before Babel processes the JS.
@@ -97,7 +96,7 @@ module.exports = {
           /\.woff2$/,
           /\.(ttf|svg|eot)$/
         ],
-        loader: 'url',
+        loader: 'url-loader',
         query: {
           limit: 10000,
           name: 'static/media/[name].[hash:8].[ext]'
@@ -117,25 +116,17 @@ module.exports = {
           presets:["es2017"]
         }
       },
-      // "postcss" loader applies autoprefixer to our CSS.
-      // "css" loader resolves paths in CSS and adds assets as dependencies.
-      // "style" loader turns CSS into JS modules that inject <style> tags.
-      // In production, we use a plugin to extract that CSS to a file, but
-      // in development "style" loader enables hot editing of CSS.
       {
-        test: /\.css$/,
+        test: /\.(css)$/,
         use: [
         "style-loader",
          "css-loader"
         ]
       },
-      // "file" loader for svg
       {
-        test: /\.svg$/,
-        loader: 'file-loader',
-        query: {
-          name: 'static/media/[name].[hash:8].[ext]'
-        }
+          test: /\.(png|jpeg)$/,
+          loader: 'file-loader',
+          options: { name: 'images/[hash].[ext]'}
       },
       {
           test: /\.(html)$/,
@@ -143,26 +134,13 @@ module.exports = {
       },
       // "file" loader for fonts
       {
-        test: /\.(jpg|png|bmp|ttf)$/,
+        test: /\.(ttf|woff|woff2?|eot|svg)$/,
         loader: 'file-loader',
-        query: {
+        query:
+        {
           name: 'fonts/[name].[hash].[ext]'
         }
-      },
-      {
-        test: /\.woff2$/,
-        loader: 'file-loader',
-        query: {
-          name: 'fonts/[name].[hash].[ext]'
-        }
-      },
-      {
-        test: /\.(ttf|eot)$/,
-        loader: 'file-loader',
-        query: {
-          name: 'fonts/[name].[hash].[ext]'
-        }
-      },
+      }
       // Truffle solidity loader to watch for changes in Solitiy files and hot
       // reload contracts with webpack.
       //

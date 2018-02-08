@@ -14,7 +14,7 @@ const kNetworkAddress = "http://localhost:8545";
 const kMaxGasPerTransaction = 21000;
 
 //Creates an instance of a Hierarchical Derivation Wallet aka HD Wallet
-export default class WalletGeneratorV2 extends HTMLElement{
+export default class WalletGenerator extends HTMLElement{
 
 	constructor()
 	{

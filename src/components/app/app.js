@@ -3,7 +3,7 @@ import "./app.css";
 import $ from "jquery";
 import "../../../node_modules/bootstrap/dist/css/bootstrap.css";
 import NavBar from "../dashboard/dashboard";
-import WalletGenerator from "../wallet-generator/wallet-generator";
+import WalletGenerator from "../wallet-generator/wallet-generator-3";
 // import ContractGenerator from "../contract-generator/contract-generator";
 import Web3 from "web3";
 import ethers from "ethers";

@@ -1,17 +1,11 @@
 import "document-register-element";
 import $ from "jquery";
 // import template from "./dark-admin/index.html";
-import template from "./dashboard.html";
-import "font-awesome/css/font-awesome.min.css";
-import "./css/font.css";
-// // <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Muli:300,400,700">
-import "./css/style-blue.css";
-import "./css/custom.css"
-import "bootstrap/dist/css/bootstrap.css"
+import template from "./sidebar.html";
 import Popper from "popper.js";
 import bootstrap from "bootstrap"
 
-export default class Dashboard extends HTMLElement
+export default class Sidebar extends HTMLElement
 {
 
 	constructor()
@@ -29,6 +23,7 @@ export default class Dashboard extends HTMLElement
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
+		$(this).addClass("d-flex align-items-stretch");
 		this.bindAndInit();
 	}
 
@@ -89,17 +84,6 @@ export default class Dashboard extends HTMLElement
 	    });
 
 
-	    // ------------------------------------------------------- //
-	    // Search Popup
-	    // ------------------------------------------------------ //
-	    $('.search-open').on('click', function (e) {
-	        e.preventDefault();
-	        $('.search-panel').fadeIn(100);
-	    })
-	    $('.search-panel .close-btn').on('click', function () {
-	        $('.search-panel').fadeOut(100);
-	    });
-
 
 	    // ------------------------------------------------------- //
 	    // Sidebar Functionality
@@ -153,4 +137,4 @@ export default class Dashboard extends HTMLElement
 	}
 }
 
-customElements.define("crwnrr-dashboard", Dashboard);
+customElements.define("crwnrr-sidebar", Sidebar);

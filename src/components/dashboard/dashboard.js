@@ -1,22 +1,31 @@
 import "document-register-element";
 import $ from "jquery";
 // import template from "./dark-admin/index.html";
+// // <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Muli:300,400,700">
 import template from "./dashboard.html";
 import "font-awesome/css/font-awesome.min.css";
 import "./css/font.css";
-// // <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Muli:300,400,700">
 import "./css/style-blue.css";
 import "./css/custom.css"
 import "bootstrap/dist/css/bootstrap.css"
 import Popper from "popper.js";
 import bootstrap from "bootstrap"
+import Header from "./header/header";
+import Footer from "./footer/footer";
+import Dropdown from "./dropdown/dropdown";
+import Sidebar from "./sidebar/sidebar";
+import Charts from "./charts/charts";
+import Tables from "./tables/tables";
+// import Login from "./login/login";
+
 
 export default class Dashboard extends HTMLElement
 {
 
-	constructor()
+	constructor(inProfileInfo = {})
 	{
 		super();
+		this._mProfileInfo = inProfileInfo;
 		this.innerHTML = template;
 	}
 
@@ -29,7 +38,26 @@ export default class Dashboard extends HTMLElement
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
+		this._mHeader = new Header(this._mProfileInfo);
+		this._mSidebar = new Sidebar(this._mProfileInfo);
+		this._mFooter = new Footer(this._mProfileInfo);
+		this._mPageContent = $(this).find(".page-content");
+		this._mPageContentHeader = $(this._mPageContent).children("page-header");
+
+		$(this).find("header.header").append(this._mHeader);
+		$(this).find("div.main").prepend(this._mSidebar);
+		$(this).append(this._mFooter);
+
+		this.addWidget(Charts);
 		this.bindAndInit();
+	}
+
+	addWidget(inWidgetCtor)
+	{
+		let section = document.createElement("section");
+		let widget = new inWidgetCtor(this._mProfileInfo);
+		$(section).append(widget);
+		$(this._mPageContent).append(section);
 	}
 
 	bindAndInit() {
@@ -74,20 +102,9 @@ export default class Dashboard extends HTMLElement
 	    })
 
 	    function adjustFooter() {
-	        var footerBlockHeight = $('.footer__block').outerHeight();
-	        pageContent.css('padding-bottom', footerBlockHeight + 'px');
+	        // var footerBlockHeight = $('crwnrr-footer').outerHeight();
+	        // $('crwnrr-footer').css('padding-bottom', footerBlockHeight + 'px');
 	    }
-
-	    // ------------------------------------------------------- //
-	    // Adding fade effect to dropdowns
-	    // ------------------------------------------------------ //
-	    $('.dropdown').on('show.bs.dropdown', function () {
-	        $(this).find('.dropdown-menu').first().stop(true, true).fadeIn(100).addClass('active');
-	    });
-	    $('.dropdown').on('hide.bs.dropdown', function () {
-	        $(this).find('.dropdown-menu').first().stop(true, true).fadeOut(100).removeClass('active');
-	    });
-
 
 	    // ------------------------------------------------------- //
 	    // Search Popup

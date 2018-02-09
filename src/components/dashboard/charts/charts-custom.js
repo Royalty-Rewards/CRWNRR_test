@@ -1,7 +1,6 @@
 /*global $, document*/
-$(document).ready(function () {
+export function ChartCustom() {
 
-    'use strict';
 
     Chart.defaults.global.defaultFontColor = '#75787c';
 
@@ -692,10 +691,4 @@ $(document).ready(function () {
         responsive: true
     };
 
-
-
-
-
-
-
-});
+}

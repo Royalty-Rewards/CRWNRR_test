@@ -1,20 +1,14 @@
 import "document-register-element";
 import $ from "jquery";
 // import template from "./dark-admin/index.html";
-import template from "./dashboard.html";
-import "font-awesome/css/font-awesome.min.css";
-import "./css/font.css";
-// // <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Muli:300,400,700">
-import "./css/style-blue.css";
-import "./css/custom.css"
-import "bootstrap/dist/css/bootstrap.css"
+import template from "./header.html";
 import Popper from "popper.js";
 import bootstrap from "bootstrap"
 
-export default class Dashboard extends HTMLElement
+export default class Header extends HTMLElement
 {
 
-	constructor()
+	constructor(inInfo = {})
 	{
 		super();
 		this.innerHTML = template;
@@ -29,39 +23,11 @@ export default class Dashboard extends HTMLElement
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
+		$(this).addClass("header");
 		this.bindAndInit();
 	}
 
 	bindAndInit() {
-
-	    // ------------------------------------------------------- //
-	    // Material Inputs
-	    // ------------------------------------------------------ //
-
-	    var materialInputs = $('input.input-material');
-
-	    // activate labels for prefilled values
-	    materialInputs.filter(function() { return $(this).val() !== ""; }).siblings('.label-material').addClass('active');
-
-	    // move label on focus
-	    materialInputs.on('focus', function () {
-	        $(this).siblings('.label-material').addClass('active');
-	    });
-
-	    // remove/keep label on blur
-	    materialInputs.on('blur', function () {
-	        $(this).siblings('.label-material').removeClass('active');
-
-	        if ($(this).val() !== '') {
-	            $(this).siblings('.label-material').addClass('active');
-	        } else {
-	            $(this).siblings('.label-material').removeClass('active');
-	        }
-	    });
-
-	    // ------------------------------------------------------- //
-	    // Footer
-	    // ------------------------------------------------------ //
 
 	    var pageContent = $('.page-content');
 
@@ -78,20 +44,6 @@ export default class Dashboard extends HTMLElement
 	        pageContent.css('padding-bottom', footerBlockHeight + 'px');
 	    }
 
-	    // ------------------------------------------------------- //
-	    // Adding fade effect to dropdowns
-	    // ------------------------------------------------------ //
-	    $('.dropdown').on('show.bs.dropdown', function () {
-	        $(this).find('.dropdown-menu').first().stop(true, true).fadeIn(100).addClass('active');
-	    });
-	    $('.dropdown').on('hide.bs.dropdown', function () {
-	        $(this).find('.dropdown-menu').first().stop(true, true).fadeOut(100).removeClass('active');
-	    });
-
-
-	    // ------------------------------------------------------- //
-	    // Search Popup
-	    // ------------------------------------------------------ //
 	    $('.search-open').on('click', function (e) {
 	        e.preventDefault();
 	        $('.search-panel').fadeIn(100);
@@ -100,10 +52,6 @@ export default class Dashboard extends HTMLElement
 	        $('.search-panel').fadeOut(100);
 	    });
 
-
-	    // ------------------------------------------------------- //
-	    // Sidebar Functionality
-	    // ------------------------------------------------------ //
 	    $('.sidebar-toggle').on('click', function () {
 	        $(this).toggleClass('active');
 
@@ -122,35 +70,7 @@ export default class Dashboard extends HTMLElement
 	        }
 	    });
 
-	    if ($('#style-switch').length > 0) {
-	        var stylesheet = $('link#theme-stylesheet');
-	        $("<link id='new-stylesheet' rel='stylesheet'>").insertAfter(stylesheet);
-	        var alternateColour = $('link#new-stylesheet');
-
-	        if ($.cookie("theme_csspath")) {
-	            alternateColour.attr("href", $.cookie("theme_csspath"));
-	        }
-
-	        $("#colour").change(function () {
-
-	            if ($(this).val() !== '') {
-
-	                var theme_csspath = 'css/style.' + $(this).val() + '.css';
-
-	                alternateColour.attr("href", theme_csspath);
-
-	                $.cookie("theme_csspath", theme_csspath, {
-	                    expires: 365,
-	                    path: document.URL.substr(0, document.URL.lastIndexOf('/'))
-	                });
-
-	            }
-
-	            return false;
-	        });
-	    }
-
 	}
 }
 
-customElements.define("crwnrr-dashboard", Dashboard);
+customElements.define("crwnrr-header", Header);

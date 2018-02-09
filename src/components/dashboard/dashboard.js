@@ -14,8 +14,9 @@ import Header from "./header/header";
 import Footer from "./footer/footer";
 import Dropdown from "./dropdown/dropdown";
 import Sidebar from "./sidebar/sidebar";
-import Charts from "./charts/charts";
+import Chart from "./charts/chart";
 import Tables from "./tables/tables";
+import Wallet from "./wallet/wallet";
 // import Login from "./login/login";
 
 
@@ -47,15 +48,15 @@ export default class Dashboard extends HTMLElement
 		$(this).find("header.header").append(this._mHeader);
 		$(this).find("div.main").prepend(this._mSidebar);
 		$(this).append(this._mFooter);
-
-		this.addWidget(Charts);
+		this.addWidget(Wallet, this._mProfileInfo);
+		// this.addWidget(Charts, this._mProfileInfo);
 		this.bindAndInit();
 	}
 
-	addWidget(inWidgetCtor)
+	addWidget(inWidgetCtor, inWidgetInfo = {})
 	{
 		let section = document.createElement("section");
-		let widget = new inWidgetCtor(this._mProfileInfo);
+		let widget = new inWidgetCtor(inWidgetInfo);
 		$(section).append(widget);
 		$(this._mPageContent).append(section);
 	}

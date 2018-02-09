@@ -17,7 +17,7 @@ const kHDPathtring = "m/0'/0'/0'";
 export default class WalletGenerator extends HTMLElement
 {
 
-	constructor()
+	constructor(inWalletReadyCallback)
 	{
 		super();
 		this.innerHTML = template;
@@ -25,28 +25,47 @@ export default class WalletGenerator extends HTMLElement
 		//FOR DEV PURPOSES ONLY!!
 		this._mSeedToKSMap = new Map();
 		this._mSeedToPwMap = new Map();
+    this._walletReady = inWalletReadyCallback;
 	}
 
 	// Fires when an instance was removed from the document.
 	disconnectedCallback()
 	{
-		// $(this).find("button.gen-send").off("click");
-		// $(this).find("button.wallet-gen-addr").off("click");
-		// $(this).find("button.wallet-gen-seed").off("click");
+		$(this).find("button.gen-send").off("click");
+		$(this).find("button.wallet-gen-addr").off("click");
+		$(this).find("button.wallet-gen-seed").off("click");
 	}
 
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
-		// $(this).find("button.wallet-gen-send").on("click", this.send_ether.bind(this));
-		// $(this).find("button.wallet-gen-addr").on("click", this.addAccount.bind(this));
-		// $(this).find("button.wallet-gen-seed").on("click", this.createWallet.bind(this));
+		$(this).find("button.brain-gen.create").on("click", this.createWallet.bind(this));
+		// $(this).find("input.brain-gen").on("change", this.addAccount.bind(this));
 		// this._mWalletSelect = $(this).find(".wallet-id");
+
 	}
 
-	createWallet()
+	createWallet(inEvent)
 	{
-
+    let inputFieldValues = $(this).find("input.brain-gen");
+    if($(this).find("input.brain-gen.pw").val() === $(this).find("input.brain-gen.confirm").val())
+    {
+      var username = new ethers.utils.toUtf8Bytes($(this).find("input.brain-gen.user").val());
+      var password = new ethers.utils.toUtf8Bytes($(this).find("input.brain-gen.pw").val());
+      $(this).find("button.close").trigger("click");
+      // showLoading('Summoning Brain Wallet...');
+      // cancelScrypt = false;
+      var self = this;
+      ethers.Wallet.fromBrainWallet(username, password).then(function(wallet) {
+          console.log(wallet);
+          self._walletReady(wallet);
+      }, function (error) {
+          if (error.message !== 'cancelled') {
+              alert('Unknown error');
+          }
+          showSelect();
+      });
+    }
 	}
 
 	addAccount()

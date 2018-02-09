@@ -1,4 +1,4 @@
-<style media="screen">
+<!-- <style media="screen">
 body {
   background-color: #eee;
   font-family: sans-serif;
@@ -187,7 +187,7 @@ div.activity a {
   float: right;
 }
 </style>
-<div class="centerer" id="screen-select">
+<div class="centerer col-lg-12" id="screen-select">
     <div class="centered">
         <table>
             <tr>
@@ -215,7 +215,7 @@ div.activity a {
 <div class="centerer hidden" id="screen-loading">
     <div class="centered">
         <h1>Loading Wallet</h1>
-        <hr />
+        <hr /> C
         <h2 id="loading-header"></h2>
         <table>
             <tr>
@@ -299,4 +299,44 @@ div.activity a {
             This is beta software, with no warranty. <b>Use at your own risk.</b>
         </p>
     </div>
+</div> -->
+
+<div class="col-lg-12">
+  <div class="block">
+    <div class="title"><strong>No Account Wallet Found!</strong></div>
+    <div class="block-body text-center">
+      <button type="button" data-toggle="modal" data-target="#myModal" class="btn btn-primary">Create Wallet</button>
+      <!-- Modal-->
+      <div id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" class="modal fade text-left">
+        <div role="document" class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header"><strong id="exampleModalLabel" class="modal-title">Create Wallet</strong>
+              <button type="button" data-dismiss="modal" aria-label="Close" class="close"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body">
+              <p>Create a Royalty Rewards Wallet for your accounts...</p>
+              <form>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" placeholder="foo@bar.com" class="form-control brain-gen user">
+                </div>
+                <div class="form-group">
+                  <label>Password</label>
+                  <input type="password" placeholder="password" class="form-control brain-gen pw">
+                </div>
+                <div class="form-group">
+                  <label>Confirm</label>
+                  <input type="password" placeholder="password" class="form-control brain-gen confirm">
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" data-dismiss="modal" class="btn btn-secondary">Close</button>
+              <button type="button" class="btn btn-primary brain-gen create">Create!</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

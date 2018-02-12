@@ -8,11 +8,11 @@ import WalletGenerator from "../../wallet-generator/wallet-generator-3";
 
 export default class DashboardAccount extends HTMLElement
 {
-	constructor(inWallet, inWeb3Instance)
+	constructor(inAccount, inWeb3)
 	{
 		super();
-    this._mInfo = inWallet;
-    this.web3 = inWeb3Instance;
+    this._mInfo = inAccount;
+    this.web3 = inWeb3;
     this.innerHTML = template;
 		this.classList.add("container-fluid");
     this._mPrivKey = inWallet.privateKey;
@@ -29,7 +29,10 @@ export default class DashboardAccount extends HTMLElement
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
-
+		if(this._mAddr === 0x6acb15245dbf5913a9227e9ff857918268218cf4)
+		{
+		  let token = new this.web3.eth.CRWNRR_Token({from: this._mAddr});
+		}
 	}
 
   updateAccountInfo(inWallet)
@@ -65,6 +68,24 @@ export default class DashboardAccount extends HTMLElement
                 }]
         }
     });
+    // let wallet CRWNRR_Token.new({from: creator});
+    // // let provider = ethers.providers.getDefaultProvider();
+    // let contract = new ethers.Contract(address, abi, provider);
+    // // Create a wallet to deploy the contract with
+    // let privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
+    // let wallet = new ethers.Wallet(privateKey, provider);
+    //
+    // // Send the transaction
+    // let sendPromise = wallet.sendTransaction(deployTransaction);
+    // // Get the transaction
+    // sendPromise.then(function(transaction) {
+    //     console.log(transaction);
+    // });
+    //
+    // web3Provider.listAccounts().then(function(accounts) {
+    //     var signer = web3Provider.getSigner(accounts[1]);
+    //     console.log(signer);
+    // });
   }
 
 getBalance ()
@@ -72,7 +93,8 @@ getBalance ()
 
   let test = this.web3.eth.getBalance(this._mAddr)
   .then((result)=> {
-        let balance = web3.utils.fromWei(result.toNumber(), "ether");
+		console.log(result);
+        let balance = web3.utils.fromWei(result, "ether");
         $(this).find(".balance").text(balance);
         console.log(result);
     });

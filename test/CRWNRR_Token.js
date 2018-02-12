@@ -7,7 +7,7 @@ contract('CRWNRR_Token_Test', function (accounts) {
   console.log(creator);
 
   beforeEach(async function () {
-    token = await CRWNRR_Token.new({from: creator});
+    token = await CRWNRR_Token.new();
   });
 
   it('should start with a totalSupply of 88888888', async function () {

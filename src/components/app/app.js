@@ -3,7 +3,7 @@ import "./app.css";
 import $ from "jquery";
 import "../../../node_modules/bootstrap/dist/css/bootstrap.css";
 import Dashboard from "../dashboard/dashboard";
-import Web3 from "../../../web3/dist/web3.min.js";
+import Web3 from "../../../web3.js-1.0/dist/web3.js";
 
 export default class App
 {

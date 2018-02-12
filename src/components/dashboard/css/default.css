@@ -26,6 +26,10 @@ a {
   display: inline-block;
 }
 
+.hidden{
+  display: none !important;
+}
+
 .dashtext-1 {
   color: #864DD9 !important;
 }
@@ -1522,7 +1526,7 @@ nav#sidebar.shrinked a[aria-expanded="true"]::after {
   height: 100%;
   display: block;
   z-index: -1;
-  background: url(../img/bg.jpeg);
+  /* background: url(../img/bg.jpeg); */
   background-size: cover;
   position: absolute;
   top: 0;
@@ -2102,6 +2106,7 @@ STYLE SWITCHER FOR DEMO
   background-image: none;
 }
 
+.progress-bar,
 .btn-primary {
   color: color-yiq(#DB6574);
   background-color: #DB6574;

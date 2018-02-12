@@ -1,48 +1,37 @@
 import "document-register-element";
-import Web3 from "web3";
-import ethers from "ethers";
 import $ from "jquery";
 import template from "./wallet-generator-3.html";
 
-const kEnterSeedPrompt = "Please enter a valid seed";
-//Generate 2 address for each wallet by default..()
-const kNumInitialAddresses = 1;
-//Ethereum test network port...
-const kNetworkAddress = "http://localhost:8545";
-const kMaxGasPerTransaction = 21000;
-const kMMHDPathtring = " m/44'/60'/0'/0";
-const kHDPathtring = "m/0'/0'/0'";
-
-//Creates an instance of a Hierarchical Derivation Wallet aka HD Wallet
 export default class WalletGenerator extends HTMLElement
 {
 
-	constructor(inWalletReadyCallback)
+	constructor(inWeb3Instance, inWalletReadyCallback)
 	{
 		super();
 		this.innerHTML = template;
-    // this._mWallet = new ethers.Wallet();
-		//FOR DEV PURPOSES ONLY!!
-		this._mSeedToKSMap = new Map();
-		this._mSeedToPwMap = new Map();
+    this._mWeb3Instance = inWeb3Instance;
+    this.classList.add("col-12-lg");
     this._walletReady = inWalletReadyCallback;
 	}
 
 	// Fires when an instance was removed from the document.
 	disconnectedCallback()
 	{
-		$(this).find("button.gen-send").off("click");
-		$(this).find("button.wallet-gen-addr").off("click");
-		$(this).find("button.wallet-gen-seed").off("click");
+		//$(this).find("button.brain-gen.create").off("click");
 	}
 
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
 		$(this).find("button.brain-gen.create").on("click", this.createWallet.bind(this));
-		// $(this).find("input.brain-gen").on("change", this.addAccount.bind(this));
-		// this._mWalletSelect = $(this).find(".wallet-id");
+		this.createWeb3Wallet();
+	}
 
+	createWeb3Wallet()
+	{
+			let wallet = this._mWeb3Instance.eth.accounts.wallet.create(0);
+			this._walletReady(wallet);
+			$(this).remove();
 	}
 
 	createWallet(inEvent)
@@ -53,20 +42,32 @@ export default class WalletGenerator extends HTMLElement
       var username = new ethers.utils.toUtf8Bytes($(this).find("input.brain-gen.user").val());
       var password = new ethers.utils.toUtf8Bytes($(this).find("input.brain-gen.pw").val());
       $(this).find("button.close").trigger("click");
-      // showLoading('Summoning Brain Wallet...');
-      // cancelScrypt = false;
-      var self = this;
-      ethers.Wallet.fromBrainWallet(username, password).then(function(wallet) {
-          console.log(wallet);
-          self._walletReady(wallet);
-      }, function (error) {
-          if (error.message !== 'cancelled') {
-              alert('Unknown error');
-          }
-          showSelect();
-      });
+      $(this).find(".progress-area").removeClass("hidden").siblings().addClass("hidden");
+      let progressBar = $(this).find(".progress-bar");
+      let completed = $(this).find(".title");
+      this._mWeb3Instance.eth.accounts.wallet.create(2);
+
     }
 	}
+
+  _createBrainWallet()
+  {
+		ethers.Wallet.fromBrainWallet(username, password, (progress)=>{
+		  $(completed).text("Working to create your wallet...");
+		  $(progressBar).width(progress * 100 + "%");
+		}).then((wallet)=> {
+		    this._walletReady(wallet);
+		},(error)=> {
+		    if (error.message !== 'cancelled') {
+		        alert('Unknown error');
+		    }
+		});
+  }
+
+  _createSeedWallet()
+  {
+    const new_seed = lightwallet.keystore.generateRandomSeed();
+  }
 
 	addAccount()
 	{
@@ -82,16 +83,16 @@ export default class WalletGenerator extends HTMLElement
 	{
 
 	}
-}
 
-// function generateAddrListItemEl(wallet, address, privKey, balance)
-// {
-// 	return "<li>"
-// 					+ "<p><b>Wallet: </b>0x" + wallet + "</p>"
-// 					+ "<p><b>Address: </b>0x" + address + "</p>"
-// 					+ "<p><b>Private Key: </b>0x" + privKey + "</p>"
-// 					+ "<p><b>Balance: </b>" + balance + " ether</p>"
-// 					+ "</li>";
-// }
+  // generateId :: Integer -> String
+  generateEntropy (inLength = 32) {
+    var arr = new Uint8Array(inLength)
+    window.crypto.getRandomValues(arr)
+    return Array.from(arr, dec=>{
+      return ('0' + dec.toString(16)).substr(-2);
+    }).join('');
+  }
+
+}
 
 customElements.define("wallet-generator", WalletGenerator);

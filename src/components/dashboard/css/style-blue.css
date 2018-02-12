@@ -2101,6 +2101,7 @@ STYLE SWITCHER FOR DEMO
   background-image: none;
 }
 
+.progress-bar,
 .btn-primary {
   color: color-yiq(#37cfdc);
   background-color: #37cfdc;

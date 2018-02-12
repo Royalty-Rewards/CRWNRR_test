@@ -23,9 +23,10 @@ import Wallet from "./wallet/wallet";
 export default class Dashboard extends HTMLElement
 {
 
-	constructor(inProfileInfo = {})
+	constructor(inWeb3, inProfileInfo = {})
 	{
 		super();
+		this.web3 = inWeb3;
 		this._mProfileInfo = inProfileInfo;
 		this.innerHTML = template;
 	}
@@ -44,19 +45,19 @@ export default class Dashboard extends HTMLElement
 		this._mFooter = new Footer(this._mProfileInfo);
 		this._mPageContent = $(this).find(".page-content");
 		this._mPageContentHeader = $(this._mPageContent).children("page-header");
-
+		//using RPC for now
 		$(this).find("header.header").append(this._mHeader);
 		$(this).find("div.main").prepend(this._mSidebar);
 		$(this).append(this._mFooter);
-		this.addWidget(Wallet, this._mProfileInfo);
+		this.addWidget(Wallet, this._mProfileInfo, this.web3);
 		// this.addWidget(Charts, this._mProfileInfo);
 		this.bindAndInit();
 	}
 
-	addWidget(inWidgetCtor, inWidgetInfo = {})
+	addWidget(inWidgetCtor, inWidgetInfo = {}, inWeb3Instance)
 	{
 		let section = document.createElement("section");
-		let widget = new inWidgetCtor(inWidgetInfo);
+		let widget = new inWidgetCtor(inWidgetInfo, inWeb3Instance);
 		$(section).append(widget);
 		$(this._mPageContent).append(section);
 	}

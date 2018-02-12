@@ -15,8 +15,8 @@ export default class DashboardAccount extends HTMLElement
     this.web3 = inWeb3;
     this.innerHTML = template;
 		this.classList.add("container-fluid");
-    this._mPrivKey = inWallet.privateKey;
-    this._mAddr = inWallet.address;
+    this._mPrivKey = inAccount.privateKey;
+    this._mAddr = inAccount.address;
     this.updateAccountInfo(this._mInfo);
 	}
 

@@ -16,23 +16,12 @@ export default class DashboardWallet extends HTMLElement
     this._mInfo = inInfo;
     this.web3 = inWeb3;
     this.innerHTML = template;
-    this._mWallet = this.web3.eth.accounts.wallet.create(0);
+    // this._mWallet = inWeb3.eth.accounts.wallet;
 		web3.eth.getAccounts()
 		.then((accounts)=>{
 			console.log(accounts);
-      for(let cur of accounts)
-      {
-              this._mWallet.add(cur);
-              console.log(this._mWallet);
-      }
-		})
-    .then(()=>{
-        this.updateWalletInfo(this._mWallet);
-    });
-		// this.appendChild(new DashboardAccount(
-    // this._mWalletGen = new WalletGenerator(this.web3, this.updateWalletInfo.bind(this));
-    // $(this).append(this._mWalletGen);
-    //retrive wallet balance info from ethereum network, and populate the GUI!
+			this.updateWalletInfo(accounts);
+		});
 	}
 
 	// Fires when an instance was removed from the document.
@@ -44,7 +33,7 @@ export default class DashboardWallet extends HTMLElement
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
-
+		
 	}
 
   updateWalletInfo(inWallet)

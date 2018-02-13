@@ -56,7 +56,7 @@ window.addEventListener('load', function() {
   }
   // window.web3.setProvider("ws://localhost:8546");
   // window.web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546'));
-  window.web3.setProvider(new Web3.providers.HttpProvider('http://localhost:8546'));
+  window.web3.setProvider(new Web3.providers.HttpProvider('http://localhost:8545'));
   window.app = new App(window.web3);
   window.app.start();
 });

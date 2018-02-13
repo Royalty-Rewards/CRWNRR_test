@@ -11,13 +11,20 @@ export default class DashboardAccount extends HTMLElement
 	constructor(inAccount, inWeb3)
 	{
 		super();
-    this._mInfo = inAccount;
-    this.web3 = inWeb3;
-    this.innerHTML = template;
+		this.web3 = inWeb3;
+		this.innerHTML = template;
 		this.classList.add("container-fluid");
-    this._mPrivKey = inAccount.privateKey;
-    this._mAddr = inAccount.address;
-    this.updateAccountInfo(this._mInfo);
+		if(typeof inAccount === "string")
+		{
+			this._mInfo = {};
+			this._mInfo.address = inAccount;
+		}
+		else
+		{
+			this._mInfo = inAccount;
+			this._mPrivKey = inAccount.privateKey;
+			this._mAddr = inAccount.address;
+		}
 	}
 
 	// Fires when an instance was removed from the document.
@@ -29,10 +36,7 @@ export default class DashboardAccount extends HTMLElement
 	// Fires when an instance was inserted into the document.
 	connectedCallback()
 	{
-		if(this._mAddr === 0x6acb15245dbf5913a9227e9ff857918268218cf4)
-		{
-		  let token = new this.web3.eth.CRWNRR_Token({from: this._mAddr});
-		}
+		this.updateAccountInfo(this._mInfo);
 	}
 
   updateAccountInfo(inWallet)
@@ -42,7 +46,7 @@ export default class DashboardAccount extends HTMLElement
       $(this).find("."+field).text(inWallet[field]);
     }
     let chartEl = $(this).find("canvas.chart")[0];
-    this.getBalance();
+    this.getBalance(inWallet.address);
     this._mChart = new Chart(chartEl, {
         type: 'doughnut',
         options: {
@@ -68,47 +72,17 @@ export default class DashboardAccount extends HTMLElement
                 }]
         }
     });
-    // let wallet CRWNRR_Token.new({from: creator});
-    // // let provider = ethers.providers.getDefaultProvider();
-    // let contract = new ethers.Contract(address, abi, provider);
-    // // Create a wallet to deploy the contract with
-    // let privateKey = '0x0123456789012345678901234567890123456789012345678901234567890123';
-    // let wallet = new ethers.Wallet(privateKey, provider);
-    //
-    // // Send the transaction
-    // let sendPromise = wallet.sendTransaction(deployTransaction);
-    // // Get the transaction
-    // sendPromise.then(function(transaction) {
-    //     console.log(transaction);
-    // });
-    //
-    // web3Provider.listAccounts().then(function(accounts) {
-    //     var signer = web3Provider.getSigner(accounts[1]);
-    //     console.log(signer);
-    // });
   }
 
-getBalance ()
+getBalance (inAddress)
 {
-
-  let test = this.web3.eth.getBalance(this._mAddr)
+	let self = this;
+  this.web3.eth.getBalance(inAddress)
   .then((result)=> {
-		console.log(result);
-        let balance = web3.utils.fromWei(result, "ether");
-        $(this).find(".balance").text(balance);
+        let balance = self.web3.utils.fromWei(result, "ether");
+        $(self).find(".balance").text(balance);
         console.log(result);
     });
-  //console.log(test);
-  //   let balance = web3.utils.fromWei(result.toNumber(), "ether");
-  //   $(this).find(".balance").text(balance);
-  //   console.log(result);
-  // });
-  // web3.eth.getBalance(this._mAddr)
-  // .then((result)=> {
-  //       let balance = web3.utils.fromWei(result.toNumber(), "ether");
-  //       $(this).find(".balance").text(balance);
-  //       console.log(result);
-  //   });
 }
 
 }

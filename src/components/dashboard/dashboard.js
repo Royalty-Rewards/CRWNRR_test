@@ -58,8 +58,8 @@ export default class Dashboard extends HTMLElement
 	{
 		let section = document.createElement("section");
 		let widget = new inWidgetCtor(inWidgetInfo, inWeb3Instance);
-		$(section).append(widget);
 		$(this._mPageContent).append(section);
+		$(section).append(widget);
 	}
 
 	bindAndInit() {

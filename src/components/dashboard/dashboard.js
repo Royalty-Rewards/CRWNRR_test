@@ -52,6 +52,15 @@ export default class Dashboard extends HTMLElement
 		this.addWidget(Wallet, this._mProfileInfo, this.web3);
 		// this.addWidget(Charts, this._mProfileInfo);
 		this.bindAndInit();
+
+		// console.log(firebase);
+		// firebase.database.ref('/$uid/__coomands').push({'eth':{'getBalance':{inAddress}}});
+		// firebase.database.ref('/$uid/__commands/$mid/').on(function(event) {
+		// 	let response = event.data;
+		// 	//...
+		// })
+
+
 	}
 
 	addWidget(inWidgetCtor, inWidgetInfo = {}, inWeb3Instance)

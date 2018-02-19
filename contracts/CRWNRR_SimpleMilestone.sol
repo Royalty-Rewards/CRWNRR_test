@@ -7,39 +7,80 @@ contract CRWNRR_SimpleMilestone is Ownable
 {
   using SafeMath for uint256;
 
-  enum status {
-    undefined,
-    incomplete,
-    complete
+  enum Stages {
+    INACTIVE,
+    INPROGRESS,
+    COMPLETE
   }
   uint256 public goal = 0;
-  status public state = status.undefined;
+  uint256 public amountSold = 0;
+  Stages public stage;
+  uint stageNum;
   address owner;
 
   event MilestoneComplete();
 
-  function CRWNRR_SimpleMilestone() public{owner = msg.sender;}
-
-  function setMilestone(uint256 inGoal) onlyOwner public
-  {
-    if(state == status.undefined && goal == 0){
-      goal = inGoal;
-      state = status.incomplete;
-    }
+  modifier atStage(Stages _stage) {
+    require(stage == _stage);
+    _;
   }
 
-  function checkMilestone(uint256 currentAmount) onlyOwner public returns(bool)
+  modifier transitionNext()
   {
-    bool milestoneCompleted = false;
-    if(state == status.incomplete)
-    {
-    if(currentAmount >= goal)
-    {
-      state = status.complete;
-      MilestoneComplete();
-      milestoneCompleted = true;
-    }
+      _;
+      nextStage();
   }
-    return milestoneCompleted;
+
+  modifier milestoneMet(uint256 _inCheckAmount) {
+    require(goal > _inCheckAmount);
+    _;
   }
+
+  function nextStage() internal {
+    stage = Stages(uint(stage) + 1);
+  }
+
+  function CRWNRR_SimpleMilestone() public
+  {
+    owner = msg.sender;
+    stage = Stages.INACTIVE;
+  }
+
+  function setMilestone(uint256 inGoal)
+    onlyOwner
+    atStage(Stages.INACTIVE)
+    transitionNext
+    public returns(bool)
+  {
+    require(goal == 0);
+    require(inGoal > 0);
+    goal = inGoal;
+    return true;
+  }
+
+  function getStage()
+  onlyOwner
+  public returns(uint)
+  {
+    return uint(stage);
+  }
+
+  function checkMilestone(uint256 inAmount)
+    onlyOwner
+    atStage(Stages.INPROGRESS)
+    public
+    /* returns(bool) */
+  {
+      /* bool isMet = false; */
+      amountSold = inAmount;
+      require(goal > 0);
+      if( amountSold >= goal)
+      {
+        /* isMet = true; */
+        MilestoneComplete();
+        stage = Stages.COMPLETE;
+      }
+      /* return isMet; */
+  }
+
 }

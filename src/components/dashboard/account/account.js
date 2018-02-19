@@ -76,12 +76,16 @@ export default class DashboardAccount extends HTMLElement
 
 getBalance (inAddress)
 {
-	let self = this;
+	// firebase.database.ref('/$uid/__coomands').push({'eth':{'getBalance':{inAddress}}});
+	// firebase.database.ref('/$uid/__commands/$mid/').on(function(event) {
+	// 	let response = event.data;
+	// 	//...
+	// })
+  //
   this.web3.eth.getBalance(inAddress)
   .then((result)=> {
         let balance = self.web3.utils.fromWei(result, "ether");
-        $(self).find(".balance").text(balance);
-        console.log(result);
+        $(this).find(".balance").text(balance);
     });
 }
 

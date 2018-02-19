@@ -31,11 +31,6 @@ contract CRWNRR_SimpleMilestone is Ownable
       nextStage();
   }
 
-  modifier milestoneMet(uint256 _inCheckAmount) {
-    require(goal > _inCheckAmount);
-    _;
-  }
-
   function nextStage() internal {
     stage = Stages(uint(stage) + 1);
   }
@@ -69,18 +64,15 @@ contract CRWNRR_SimpleMilestone is Ownable
     onlyOwner
     atStage(Stages.INPROGRESS)
     public
-    /* returns(bool) */
   {
-      /* bool isMet = false; */
       amountSold = inAmount;
       require(goal > 0);
       if( amountSold >= goal)
       {
-        /* isMet = true; */
         MilestoneComplete();
         stage = Stages.COMPLETE;
       }
-      /* return isMet; */
   }
+
 
 }

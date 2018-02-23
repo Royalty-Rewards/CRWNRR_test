@@ -1,43 +1,24 @@
-// var ConvertLib = artifacts.require("./ConvertLib.sol");
-// var CRWNRR_Token = artifacts.require("./CRWNRR_Token.sol");
-// var CRWNRR_SimpleMilestone = artifacts.require("./CRWNRR_SimpleMilestone.sol");
-var CRWNRR_SimpleCrowdsale = artifacts.require("./CRWNRR_SimpleCrowdsale.sol");
-//var CRWNRR_Crowdsale = artifacts.require("zeppelin-solidity/contracts/examples/SampleCrowdsale.sol");
+var CRWNRR_SimpleMilestone = artifacts.require("./CRWNRR_SimpleMilestone.sol");
+var CRWNRR_Crowdsale = artifacts.require("./CRWNRR_Crowdsale.sol");
 
 module.exports = function(deployer, network, accounts){
-  // deployer.deploy(ConvertLib);
-  // deployer.link(ConvertLib, CRWNRR_Token);
-  // deployer.deploy(CRWNRR_Token);
-  // deployer.deploy(CRWNRR_SimpleMilestone);
-  // deployer.deploy(CRWNRR_Crowdsale, startTime, endTime, rate, wallet)
-  // deployer.deploy(CRWNRR_Crowdsale);
   deployTestCrowdsale(deployer, accounts);
 };
 
 function deployTestCrowdsale(deployer, accounts) {
 
-   // const accounts = web3.eth.accounts;
-
    const startTime = latestTime();
-   const endTime = startTime + duration.days(45);
-   const rate = 2500;
+   const endTime = startTime + (86400 * 20) // 20 days
+   const rate = new web3.BigNumber(1000);
    const goal = web3.toWei(250, 'ether');
    const cap = web3.toWei(4000, 'ether');
    const wallet = accounts[0];
 
-   return deployer.deploy(CRWNRR_SimpleCrowdsale, startTime, endTime, rate, goal, cap, wallet);
+   //return deployer.deploy(CRWNRR_SimpleCrowdsale, startTime, endTime, rate, wallet, {gas: 4712388, from: wallet});
+   return deployer.deploy(CRWNRR_Crowdsale, startTime, endTime, rate, goal, cap, wallet, {gas: 5712388, from: wallet});
 
 }
 
 function latestTime() {
-  return web3.eth.getBlock('latest').timestamp;
+  return web3.eth.getBlock(web3.eth.blockNumber).timestamp + 1
 }
-
-const duration = {
-   seconds: function (val) { return val; },
-   minutes: function (val) { return val * this.seconds(60); },
-   hours: function (val) { return val * this.minutes(60); },
-   days: function (val) { return val * this.hours(24); },
-   weeks: function (val) { return val * this.days(7); },
-   years: function (val) { return val * this.days(365); },
-};

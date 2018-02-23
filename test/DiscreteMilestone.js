@@ -7,9 +7,9 @@ const BigNumber = web3.BigNumber;
 const EVMRevert = "revert";
 let goal = 500;
 
-var CRWNRR_SimpleMilestone = artifacts.require('./contracts/CRWNRR_SimpleMilestone.sol');
+var DiscreteMilestone = artifacts.require('./contracts/DiscreteMilestone.sol');
 
-contract('CRWNRR_SimpleMilestone', function (accounts) {
+contract('DiscreteMilestone', function (accounts) {
   let milestone;
   var owner = accounts[0];
 
@@ -45,6 +45,15 @@ contract('CRWNRR_SimpleMilestone', function (accounts) {
     let stage =  await milestone.getStage.call();
     stage = stage.toNumber();
     assert.equal(stage, 1);
+  });
+
+  it('should see check milestone percentage to completion', async function () {
+    milestone = await CRWNRR_SimpleMilestone.new();
+    await milestone.setMilestone(100);
+    await milestone.checkMilestone(50);
+    let percentComplete =  await milestone.getPercentageComplete.call();
+    percentComplete = stage.toNumber();
+    assert.equal(percentComplete, 50);
   });
 
   it('should make sure milestone IS passed', async function () {

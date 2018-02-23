@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract CRWNRR_SimpleMilestone is Ownable
+contract DiscreteMilestone is Ownable
 {
   using SafeMath for uint256;
 
@@ -55,9 +55,16 @@ contract CRWNRR_SimpleMilestone is Ownable
 
   function getStage()
   onlyOwner
-  public returns(uint)
+  public view returns(uint)
   {
     return uint(stage);
+  }
+
+  function getPercentageComplete()
+  onlyOwner
+  public view returns(uint)
+  {
+    return uint((amountSold / goal) * 100);
   }
 
   function checkMilestone(uint256 inAmount)

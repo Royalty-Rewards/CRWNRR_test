@@ -3,133 +3,301 @@ pragma solidity ^0.4.18;
 
 import "./CRWNRR_Token.sol";
 import "./CRWNRR_Crowdsale.sol";
-import "./CRWNRR_SimpleMilestone.sol";
-import "./Wallet.sol";
+/* import "./CRWNRR_SimpleMilestone.sol"; */
+import "./Milestone.sol";
+import "./MultiSigWallet.sol";
+/* import "./Wallet.sol"; */
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/payment/SplitPayment.sol";
 
-contract CRWNRR_OPAC is Ownable {
+//Perhaps this should inherit from multisig as well?
+contract OPAC is Ownable {
+  using SafeMath for uint256;
+
+  enum MilestoneType {
+     UNKNOWN,
+     DISCRETE,
+     CONSENSUS
+  }
+
+  struct OPACMilestone {
+    uint256 reward;
+    Milestone milestone;
+    string milestoneName;
+    MilestoneType msType;
+  }
+
+  struct OPACOwner {
+    MultiSigWallet wallet;
+    uint shares;
+  }
+
+  struct OPACShareholder {
+    MultiSigWallet wallet; // get balance to determine # of shares shareholder has
+    uint256 contribution;
+  }
+
+  mapping(address => OPACOwner) mOwners;
+  mapping (address => bool) public isOwner;
+
+  mapping(address => OPACShareholder) mShareholders;
+  mapping (address => bool) public isShareholder;
+
+  //Used to disburse royalties, and rewards...
+  SplitPayment mPaymentSplitter;
+
+  address owner;
 
   //OPAC escrow wallet
-  Wallet mEscrowWallet;
-  //Used to disburse funding to OPAC owners
-  SplitPayment paymentSplitter;
+  MultiSigWallet mEscrowWallet;
 
-  mapping(address => Wallet) m_ownerIndex;
+  uint curActiveMilestone = 0;
+  uint totalMilestones = 0;
+  mapping(uint => OPACMilestone) mMilestones;
 
-  struct RoyaltyRewards {
-    CRWNRR_SimpleMilestone milestone;
-    mapping(address => Wallet) m_ownerIndex;
-    uint8 vote;
-    address delegate;
+  CRWNRR_Crowdsale mCrowdsale;
+
+  // =================================================================================================================
+  //                                      Events
+  // =================================================================================================================
+
+
+  event Deposit(address indexed sender, uint indexed value, bool indexed success);
+  event Withdrawal(address indexed sender,  uint indexed value, bool indexed success);
+
+  event TokensIssued(address indexed sender,  uint indexed value, bool indexed success);
+
+  event OPACOwnerAdded(address indexed owner);
+  event OPACOwnerRemoved(address indexed owner);
+
+  event ShareholderAdded(address newOwner);
+  event ShareholderRemoved(address indexed owner);
+
+  event MilestoneComplete(uint transactionId, string milestoneName);
+  event MilestoneFailed();
+
+  event VoteRecorded(address indexed shareholder, bool indexed value);
+  event VoteDenied(address indexed shareholder, bool indexed value);
+
+
+  modifier milestoneExists(uint _milestoneIndex)
+  {
+    require(mMilestones[_milestoneIndex].milestone != address(0));
+    _;
+  }
+  modifier isActiveShareholder(address inAddress)
+  {
+    require(isShareholder[inAddress]);
+     _;
+  }
+  modifier isActiveOwner(address inAddress)
+  {
+    require(isOwner[inAddress]);
+     _;
   }
 
-    // Defines a new type with two fields.
-  struct Funder {
-      address addr;
-      uint amount;
+
+// =================================================================================================================
+//                                      OPAC Crowdsale Iterface
+// =================================================================================================================
+
+/**
+ * @dev OPAC constructor function
+ */
+function OPAC(address[] opacOwnerWallets, uint[] sharePercentages)
+{
+  owner = msg.sender;
+  if(opacOwnerWallets.length == sharePercentages.length)
+  {
+    //create escrow wallet
+    address[] escrowWalletOwner;
+    escrowWalletOwner.push(address(this));
+    mEscrowWallet = new MultiSigWallet(escrowWalletOwner, 1);
+    mPaymentSplitter = new SplitPayment(opacOwnerWallets, sharePercentages);
+    //create OPAC owner accounts/wallet
+    for(uint i = 0; i < opacOwnerWallets.length; i++)
+    {
+      address[] walletOwnerAddr;
+      walletOwnerAddr.push(opacOwnerWallets[i]);
+      require(opacOwnerWallets[i] != address(0));
+      mOwners[opacOwnerWallets[i]].wallet = new MultiSigWallet(walletOwnerAddr, 1);
+      mOwners[opacOwnerWallets[i]].shares = sharePercentages[i];
+      isOwner[opacOwnerWallets[i]] = true;
+    }
+  }
+}
+
+/**
+ * @dev payable fallback function for receiving funds -> forwards directly to escrow wallet
+ */
+function () public payable
+{
+  require(msg.sender != address(0));
+  require(msg.value > 0);
+  mEscrowWallet.transfer(msg.value);
+}
+
+// =================================================================================================================
+//                                      OPAC Crowdsale Iterface
+// =================================================================================================================
+
+/* function getNumberOfShareeholders()
+{
+
+}
+
+function getTotalAmountFunded()
+{
+  //
+}
+
+function getTotalFundsReleased()
+{
+  // loop through mMilestones, and return sum of all COMPLETE milestones
+} */
+
+function createCrowdsale(uint256 _startTime, uint256 _endTime, uint256 _rate, uint256 _goal, uint256 _cap)
+onlyOwner
+internal returns(CRWNRR_Crowdsale)
+{
+
+  return new CRWNRR_Crowdsale(_startTime, _endTime, _rate, _goal, _cap, mEscrowWallet);
+}
+
+function buyTokens(address shareholderTokenWallet)
+public payable
+{
+  require(msg.sender != address(0));
+  require(msg.value > 0);
+  if(!isShareholder[msg.sender])
+  {
+    //create new wallet for shareholder
+    //full ownership given to shareholder after crowdsale finishes)
+    address[] walletOwnerAddr;
+    walletOwnerAddr.push(msg.sender);
+    walletOwnerAddr.push(address(this));
+    mShareholders[msg.sender].wallet = new MultiSigWallet(walletOwnerAddr, 2);
+    mShareholders[msg.sender].contribution = msg.value;
+    isShareholder[msg.sender] = true;
+  }
+  else
+  {
+    mShareholders[msg.sender].contribution = mShareholders[msg.sender].contribution.add(msg.value);
+  }
+  mCrowdsale.buyTokens(mShareholders[msg.sender].wallet);
+  //trigger deposit event
+  Deposit(msg.sender, msg.value, true);
+}
+
+// =================================================================================================================
+//                                      OPAC Milestone Accessors
+// =================================================================================================================
+
+  function addMilestone(string milestoneName, uint milestoneIndex)
+  onlyOwner
+  public returns(bool)
+  {
+    totalMilestones = totalMilestones.add(1);
+    /*
+    We need a reliable way of determining mileston order..
+    Easiest way would be using an integer index value (use insertion sort?), however,
+    we could also use a linked-list like structure where each node could point to the next, etc...
+
+    Either way, if/when the order of the existing milestones is changed, some bookkeeping will
+    need to be done
+    */
+
   }
 
-  struct Campaign {
-      address beneficiary;
-      uint fundingGoal;
-      uint numFunders;
-      uint amount;
-      mapping (uint => Funder) funders;
-  }
-
-  uint numCampaigns;
-  mapping (uint => Campaign) campaigns;
-
-  function newCampaign(address beneficiary, uint goal) public returns (uint campaignID) {
-      campaignID = numCampaigns++; // campaignID is return variable
-      // Creates new struct and saves in storage. We leave out the mapping type.
-      campaigns[campaignID] = Campaign(beneficiary, goal, 0, 0);
-  }
-
-  function contribute(uint campaignID) public payable {
-      Campaign storage c = campaigns[campaignID];
-      // Creates a new temporary memory struct, initialised with the given values
-      // and copies it over to storage.
-      // Note that you can also use Funder(msg.sender, msg.value) to initialise.
-      c.funders[c.numFunders++] = Funder({addr: msg.sender, amount: msg.value});
-      c.amount += msg.value;
-  }
-
-  function checkGoalReached(uint campaignID) public returns (bool reached) {
-      Campaign storage c = campaigns[campaignID];
-      if (c.amount < c.fundingGoal)
-          return false;
-      uint amount = c.amount;
-      c.amount = 0;
-      c.beneficiary.transfer(amount);
-      return true;
-  }
-
-  function addDiscreteMilestone()
+  function addDevMilestone(string milestoneName, uint milestoneIndex)
+  onlyOwner
+  public returns(bool)
   {
 
   }
 
-  function addConsensusMilestone()
+  function beginMilestone(uint _milestoneIndex)
+  milestoneExists(_milestoneIndex)
+  public returns(bool)
   {
-
+    require(isOwner[msg.sender]);
+    require(_milestoneIndex == curActiveMilestone);
+    return mMilestones[curActiveMilestone].milestone.beginProgress();
   }
 
-  function getNumberOfMilestones()
+  function getMilestoneStage(uint _milestoneIndex)
+  milestoneExists(_milestoneIndex)
+  view returns(uint)
   {
-
-  }
-
-  function getCurrentMilestone()
-  {
-
-  }
-
-  function totalMilestonesComplete()
-  {
-
+    return mMilestones[curActiveMilestone].milestone.getStage();
   }
 
   function getCurrentMilestoneProgress()
+  milestoneExists(curActiveMilestone)
+  view returns(uint)
   {
-
+    return mMilestones[curActiveMilestone].milestone.getProgress();
   }
 
-  function getNumberOfStakeholders()
+  function getNumberOfMilestones()
+  view returns(uint)
   {
-
+      return totalMilestones;
   }
 
-  function getTotalAmountFunded()
+  function getCurrentMilestone()
+  view returns(uint)
   {
-
+    return curActiveMilestone;
   }
 
-  function getTotalFundsReleased()
+  function totalMilestonesComplete()
+  view returns(uint)
   {
-
+    return curActiveMilestone;
   }
 
-  function addStakeholder()
+  function updateMilestone(address milestoneShareholder, bool value, uint256 data)
+  milestoneExists(curActiveMilestone)
+  public returns(bool)
   {
-
+    bool milestoneComplete = false;
+    if(mMilestones[curActiveMilestone].msType == MilestoneType.DISCRETE)
+    {
+      require(isOwner[milestoneShareholder]);
+      require(mMilestones[curActiveMilestone].milestone.getStage() == uint(1));
+      milestoneComplete = mMilestones[curActiveMilestone].milestone.checkMilestone(data);
+    }
+    else
+    if(mMilestones[curActiveMilestone].msType == MilestoneType.CONSENSUS)
+    {
+      require(isShareholder[milestoneShareholder]);
+      require(mMilestones[curActiveMilestone].milestone.getStage() == uint(2));
+      milestoneComplete = mMilestones[curActiveMilestone].milestone.vote(milestoneShareholder, value);
+    }
+    if(milestoneComplete)
+    {
+       releaseMilestoneRewards();
+    }
+    return milestoneComplete;
   }
 
-  function createCrowdsale()
+  function releaseMilestoneRewards()
+  onlyOwner
+  internal
   {
-
-  }
-
-  function buyTokens()
-  {
-
-  }
-
-  function voteOnMilestone()
-  {
-
+      //retrieve reward amount
+      uint reward = uint(mMilestones[completedMilestone].reward);
+      string milestoneName = mMilestones[completedMilestone].milestoneName;
+      uint completedMilestone = curActiveMilestone;
+      curActiveMilestone = completedMilestone.add(1);
+      //withdraw amount from escrow wallet, and distribute with payment splitter
+      uint transactionId = mEscrowWallet.submitTransaction(address(mPaymentSplitter), reward, bytes(milestoneName));
+      //Fire milestone complete event... Now, each person receiving rewards must claim their funds..
+      MilestoneComplete(transactionId, milestoneName);
+      //TODO: Check any for royalties that should be paid out as a result of milestone completion?
+      //Calculate royalty amount based on CRWNRR balance in shareholders wallet
   }
 
 }

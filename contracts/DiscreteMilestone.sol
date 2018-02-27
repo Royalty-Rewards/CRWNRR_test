@@ -1,11 +1,12 @@
 pragma solidity ^0.4.18;
-
+/*
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 contract DiscreteMilestone is Ownable
 {
   using SafeMath for uint256;
+  using SafeMath for uint;
 
   enum Stages {
     INACTIVE,
@@ -17,8 +18,6 @@ contract DiscreteMilestone is Ownable
   Stages public stage;
   uint stageNum;
   address owner;
-
-  event MilestoneComplete();
 
   modifier atStage(Stages _stage) {
     require(stage == _stage);
@@ -82,4 +81,4 @@ contract DiscreteMilestone is Ownable
   }
 
 
-}
+} */

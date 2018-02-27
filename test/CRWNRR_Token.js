@@ -9,11 +9,11 @@ contract('CRWNRR_Token_Test', function (accounts) {
   beforeEach(async function () {
     token = await CRWNRR_Token.new();
   });
-
-  it('should start with a totalSupply of 88888888', async function () {
-    let totalSupply = await token.totalSupply();
-    assert.equal(totalSupply, 88888888);
-  });
+  //
+  // it('should start with a totalSupply of 88888888', async function () {
+  //   let totalSupply = await token.totalSupply();
+  //   assert.equal(totalSupply, 88888888);
+  // });
 
   it('should return mintingFinished false after construction', async function () {
     let mintingFinished = await token.mintingFinished();

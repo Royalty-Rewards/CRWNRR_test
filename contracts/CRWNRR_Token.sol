@@ -9,6 +9,5 @@ contract CRWNRR_Token is MintableToken {
   string public symbol = "CRWNRR";
   uint8 public decimals = 18;
   // 18 decimals is the strongly suggested default, avoid changing it
-  uint256 public totalSupply = 88888888;
 
 }

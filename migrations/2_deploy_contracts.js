@@ -1,4 +1,4 @@
-var CRWNRR_SimpleMilestone = artifacts.require("./CRWNRR_SimpleMilestone.sol");
+
 var CRWNRR_Crowdsale = artifacts.require("./CRWNRR_Crowdsale.sol");
 
 module.exports = function(deployer, network, accounts){

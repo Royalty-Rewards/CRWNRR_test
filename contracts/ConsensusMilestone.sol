@@ -1,10 +1,12 @@
-pragma solidity ^0.4.18;
-
+ pragma solidity ^0.4.18;
+/*
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./MultiSig.sol";
 
 contract ConsensusMilestone is Ownable{
+  using SafeMath for uint256;
+  using SafeMath for uint;
 
   enum Stages {
     INACTIVE,
@@ -19,76 +21,45 @@ contract ConsensusMilestone is Ownable{
      YES
   }
 
-  struct Stakeholder
+  struct shareholder
   {
     bool voted;
     VoteStates vote;
-    address stakeholderAddress;
+    address shareholderAddress;
     uint256 weight; //determined by CRWN balance
   }
 
-  uint256 totalStakeholderWeight = 0; //use to determine the total possible voting weight from the amoutn of CRWN each stakehold owns
+  uint256 totalShares = 0; //use to determine the total possible voting weight from the amoutn of CRWN each stakehold owns
   uint totalYesWeight = 0;
   uint totalNoWeight = 0;
   address beneficiary;
-  uint totalStakeholders = 0;
-  mapping(address => Stakeholder) mStakeholders;
-  mapping(uint => address) mStakeholdersIndexMap;
+  uint totalshareholders = 0;
+  mapping(address => shareholder) mShareholders;
+  mapping(uint => address) mShareholdersIndexMap;
+  mapping(uint => uint) voteTally;
 
   event MilestoneComplete();
   event MilestoneFailed();
   event VoteRecorded(address, bool);
-  event StakeholderAdded(address newOwner);
-  event StakeholderRemoved(address oldOwner);
+  event shareholderAdded(address newOwner);
 
+  modifier transitionNext(){ _; nextStage(); }
+  modifier transitionPrev(){ _; prevStage(); }
+  modifier isShareholder(address inAddress){ require(mShareholders[inAddress] != 0); _; }
+  modifier isBeneficiary(address inAddress){ require(inAddress == beneficiary);  _; }
 
-  modifier transitionNext()
-  {
-      _;
-      nextStage();
-  }
+  function nextStage() internal{ stage = Stages(uint(stage) + 1); }
+  function prevStage() internal{ stage = Stages(uint(stage) - 1); }
 
-  modifier transitionPrev()
-  {
-      _;
-      prevStage();
-  }
-
-  function nextStage() internal
-  {
-    stage = Stages(uint(stage) + 1);
-  }
-
-  function prevStage() internal
-  {
-    stage = Stages(uint(stage) - 1);
-  }
-
-  modifier isStakeHolder(address inAddress)
-  {
-    require(mStakeholders[inAddress] != 0);
-    _;
-  }
-
-  modifier isBeneficiary(address inAddress)
-  {
-    require(inAddress == beneficiary);
-    _;
-  }
-
-  /**
-   * @dev Constructor
-   */
   function ConsensusMilestone(address _beneficiary)
   {
       owner = msg.sender;
       stage = Stages.INACTIVE;
       beneficiary = _beneficiary;
+      voteTally[uint(VoteStates.NO)] = 0;
+      voteTally[uint(VoteStates.YES)] = 0;
   }
 
-  /**
-   * @dev Function to begin progress on milestone
-   */
   function beginProgress(potentialBeneficiary)
   onlyOwner
   isBeneficiary(potentialBeneficiary)
@@ -96,13 +67,10 @@ contract ConsensusMilestone is Ownable{
   transitionNext
   public returns(bool)
   {
-    require(mStakeholders.length > 0);
+    require(mShareholders.length > 0);
     return true;
   }
 
-  /**
-   * @dev Function to reset progress on milestone (milestone was voted down)
-   */
   function resetProgress(potentialBeneficiary)
   onlyOwner
   isBeneficiary(potentialBeneficiary)
@@ -110,13 +78,10 @@ contract ConsensusMilestone is Ownable{
   transitionPrev
   public returns(bool)
   {
-    require(mStakeholders.length > 0);
+    require(mShareholders.length > 0);
     return true;
   }
 
-  /**
-   * @dev Function to stop progress on milestone
-   */
   function stopProgress(potentialBeneficiary)
   onlyOwner
   isBeneficiary(potentialBeneficiary)
@@ -124,13 +89,10 @@ contract ConsensusMilestone is Ownable{
   transitionPrev
   public returns(bool)
   {
-    require(mStakeholders.length > 0);
+    require(mShareholders.length > 0);
     return true;
   }
 
-  /**
-   * @dev Function to begin verification (voting) on milestone
-   */
   function beginVerification(address potentialBeneficiary)
   onlyOwner
   atStage(Stages.INPROGRESS)
@@ -138,103 +100,77 @@ contract ConsensusMilestone is Ownable{
   transitionNext
   public returns(bool)
   {
-    require(mStakeholders.length > 0);
+    require(mShareholders.length > 0);
     return true;
   }
 
-  function addStakeholder(address stakeHolderAddress)
+  function addshareholder(address shareholderAddress)
   onlyOwner
   public returns(bool)
   {
-    //make sure the beneficiary is not the stakeholder..
-    require(stakeHolderAddress != beneficiary);
-    //make sure stakeholder doesnt already exist..
-    require(mStakeholders[stakeHolderAddress] == 0);
-    //add new stakeholder to mStakeholders
-    totalStakeholders += 1;
-    mStakeholdersIndexMap[totalStakeholders] = stakeHolderAddress;
-    mStakeholders[stakeholderAddress] = Stakeholder(false, VoteStates.NONE, stakeHolderAddress, stakeHolderAddress.balance);
+    //make sure the beneficiary is not the shareholder..
+    require(shareholderAddress != beneficiary);
+    //make sure shareholder doesnt already exist..
+    require(mShareholders[shareholderAddress] == 0);
+    //add new shareholder to mShareholders
+    totalshareholders += 1;
+    mShareholdersIndexMap[totalshareholders] = shareholderAddress;
+    mShareholders[shareholderAddress] = shareholder(false, VoteStates.NONE, shareholderAddress, shareholderAddress.balance);
     return true;
-  }
-
-  /// Delegate your vote to the voter $(to).
-  function delegate(address to) public
-  {
-      Voter storage sender = voters[msg.sender]; // assigns reference
-      if (sender.voted) return;
-      while (voters[to].delegate != address(0) && voters[to].delegate != msg.sender)
-          to = voters[to].delegate;
-      if (to == msg.sender) return;
-      sender.voted = true;
-      sender.delegate = to;
-      Voter storage delegateTo = voters[to];
-      if (delegateTo.voted)
-          proposals[delegateTo.vote].voteCount += sender.weight;
-      else
-          delegateTo.weight += sender.weight;
   }
 
   function vote(address potentialVoterAddress, bool voteValue)
   onlyOwner
-  isStakeHolder(stakeholder)
+  isShareholder(shareholder)
   atStage(Stages.VERIFICATION)
   public returns(bool)
   {
-      require(mStakeholders[stakeHolderAddress] != 0);
-      Stakeholder storage voter = voters[potentialVoterAddress];
+      require(mShareholders[shareholderAddress] != 0);
+      shareholder storage voter = voters[potentialVoterAddress];
       if (voter.voted || voter.vote != VoteStates.NONE)
       {
         return false;
       }
-      uint256 voterBalance = voter.stakeHolderAddress.balance;
-      uint256 totalStake = calculateTotalStake();
-      uint weight = uint((voterBalance / totalStake) * 100);
+      uint256 voterBalance = voter.shareholderAddress.balance;
+      uint256 totalShares = calculateTotalShares();
+      uint weight = uint((voterBalance.div(totalShares)).mul(100));
       sender.voted = true;
-      sender.vote = voteValue;
+      VoteRecorded(potentialVoterAddress, voteValue);
       if(voteValue == true)
       {
-        totalYesWeight += weight;
+        sender.vote = VoteStates.YES;
+        voteTally[uint(VoteStates.YES)].add(weight);
         if(totalYesWeight > 50)
         {
           MilestoneComplete();
+          stage = Stages.COMPLETE;
         }
       }
       else
       {
-        totalNoWeight += weight;
+        sender.vote = VoteStates.NO;
+        voteTally[uint(VoteStates.NO)].add(weight);
         if(totalNoWeight > 50)
         {
           MilestoneFailed();
+          stage = Stages.INPROGRESS;
         }
       }
-      VoteRecorded(potentialVoterAddress, voteValue);
       return true;
-      /* proposals[toProposal].voteCount += sender.weight; */
   }
 
-  function calculateTotalStake()
+  function calculateTotalShares()
   onlyOwner
-  isStakeHolder(stakeholder)
+  isShareholder(shareholder)
   atStage(Stages.VERIFICATION)
   internal returns(uint256)
   {
     uint256 totalStake = 0;
-    for (uint i = 1; i < totalStakeholders + 1; i++)
+    for (uint i = 1; i < totalshareholders + 1; i++)
     {
-        totalStake += m_ownerIndex[mStakeholdersIndexMap[i]].stakeholderAddress.balance;
+        uint256 shareholderBalance = m_ownerIndex[mShareholdersIndexMap[i]].shareholderAddress.balance;
+        totalStake.add(shareholderBalance);
     }
     return totalStake;
   }
-
-function winningProposal() public constant returns (uint8 _winningProposal) {
-    uint256 winningVoteCount = 0;
-    for (uint8 prop = 0; prop < proposals.length; prop++)
-        if (proposals[prop].voteCount > winningVoteCount) {
-            winningVoteCount = proposals[prop].voteCount;
-            _winningProposal = prop;
-        }
-}
-
-
-
-}
+} */

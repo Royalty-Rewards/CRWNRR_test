@@ -13,8 +13,8 @@ contract('Milestone', function (accounts) {
   let milestone;
   var owner = accounts[0];
   var shareholders = [accounts[1],accounts[2],accounts[3],accounts[4]];
-  it('should check the milestone goal has been set', async function () {
-    milestone = await Milestone.new();
+  it('should create, amd check discrete milestone', async function () {
+    milestone = await Milestone.new("discreteMilestoneTest");
     await milestone.setDiscreteMilestone(10);
     let goal = await milestone.goal.call();
     goal = goal.toNumber();
@@ -22,11 +22,18 @@ contract('Milestone', function (accounts) {
     let stage =  await milestone.getStage.call();
     stage = stage.toNumber();
     assert.equal(stage, 0);
+    let started =  await milestone.startProgress();
+    let isMet = await milestone.checkMilestone(9);
+    stage =  await milestone.getStage.call();
+    stage = stage.toNumber();
+    assert.equal(stage, 1);
+    isMet = await milestone.checkMilestone(11);
+    assert.equal(isMet.logs[0].event, "MilestoneComplete");
   });
 
   it('should check the number of shareholders, total shares, and shareholder voting weight',
   async function () {
-    milestone = await Milestone.new();
+    milestone = await Milestone.new("consensusMilestoneTest");
     //set milestone as consensus milestone (voting required to pass)
     await milestone.setConsensusMilestone(shareholders);
     let stage =  await milestone.getStage.call();
@@ -67,50 +74,6 @@ contract('Milestone', function (accounts) {
     assert.equal(voted3.logs[0].event, "Voted");
     assert.equal(voted3.logs[1].event, "MilestoneComplete");
   });
-
-  // it('should make sure milestone goal cannot be changed', async function () {
-  //   milestone = await Milestone.new();
-  //   await milestone.setDiscreteMilestone(10);
-  //   await milestone.setDiscreteMilestone(20).catch(function(e){});
-  //   let goal = await milestone.goal.call();
-  //   goal = goal.toNumber();
-  //   assert.equal(goal, 10);
-  // });
-  //
-  // it('should check the milestone state is IN PROGRESS', async function () {
-  //   milestone = await Milestone.new();
-  //   await milestone.setDiscreteMilestone(10);
-  //   let stage =  await milestone.getStage.call();
-  //   stage = stage.toNumber();
-  //   assert.equal(stage, 1);
-  // });
-  //
-  // it('should make sure milestone is NOT passed', async function () {
-  //   milestone = await Milestone.new();
-  //   await milestone.setDiscreteMilestone(10);
-  //   let isMet = await milestone.checkMilestone(9);
-  //   let stage =  await milestone.getStage.call();
-  //   stage = stage.toNumber();
-  //   assert.equal(stage, 1);
-  // });
-  //
-  // it('should see check milestone percentage to completion', async function () {
-  //   milestone = await Milestone.new();
-  //   await milestone.setDiscreteMilestone(100);
-  //   await milestone.checkMilestone(50);
-  //   let percentComplete =  await milestone.getPercentageComplete.call();
-  //   percentComplete = stage.toNumber();
-  //   assert.equal(percentComplete, 50);
-  // });
-  //
-  // it('should make sure milestone IS passed', async function () {
-  //   milestone = await Milestone.new();
-  //   await milestone.setDiscreteMilestone(10);
-  //   let isMet = await milestone.checkMilestone(11);
-  //   assert.equal(isMet.logs[0].event, "MilestoneComplete");
-  //   let stage =  await milestone.getStage.call();
-  //   assert.equal(stage, 2);
-  // });
 
 });
 

@@ -37,7 +37,7 @@ contract Milestone is Ownable{
   uint256 public amountSold = 0;
 
   Stages public stage;
-
+  string milestoneName;
   address owner;
   MilestoneType mType;
   /* uint256 totalShares = 0; //use to determine the total possible voting weight from the amoutn of CRWN each stakehold owns */
@@ -55,9 +55,9 @@ contract Milestone is Ownable{
   mapping(uint => uint256) voteTally;
 
 
-  event Voted();
-  event MilestoneComplete();
-  event MilestoneRejected();
+  event Voted(address voter);
+  event MilestoneComplete(string milestoneName);
+  event MilestoneRejected(string milestoneName);
 
   modifier atStage(Stages _stage)
   {
@@ -96,12 +96,13 @@ contract Milestone is Ownable{
   /**
    * @dev Constructor
    */
-  function Milestone()
+  function Milestone(string _milestoneName)
   {
       owner = msg.sender;
       stage = Stages.INACTIVE;
       mType = MilestoneType.UNKNOWN;
       beneficiary = owner;
+      milestoneName = _milestoneName;
   }
 
   function setConsensusMilestone(address[] _shareholders)
@@ -269,6 +270,7 @@ contract Milestone is Ownable{
       if( amountSold >= goal)
       {
         stage = Stages.COMPLETE;
+        MilestoneComplete(milestoneName);
         ret = true;
       }
       return ret;
@@ -305,12 +307,12 @@ contract Milestone is Ownable{
       VoteStates voteType = VoteStates(boolToVote[voteValue]);
       voter.vote = voteType;
       voteTally[uint(voteType)] = voteTally[uint(voteType)].add(weight);
-      Voted();
+      Voted(shareholderAddress);
       if(voteTally[uint(voteType)] > 50)
       {
         if(voteType == VoteStates.YES)
         {
-          MilestoneComplete();
+          MilestoneComplete(milestoneName);
           stage = Stages.COMPLETE;
         }
         /* else if(voteType == VoteStates.NO)

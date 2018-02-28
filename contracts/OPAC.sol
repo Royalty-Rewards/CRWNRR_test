@@ -1,17 +1,16 @@
 pragma solidity ^0.4.18;
 
 
-import "./CRWNRR_Token.sol";
+/* import "./CRWNRR_Token.sol"; */
 import "./CRWNRR_Crowdsale.sol";
-/* import "./CRWNRR_SimpleMilestone.sol"; */
 import "./Milestone.sol";
 import "./MultiSigWallet.sol";
-/* import "./Wallet.sol"; */
-import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-import "zeppelin-solidity/contracts/payment/SplitPayment.sol";
+import "./zeppelin/math/SafeMath.sol";
+import "./zeppelin/ownership/Ownable.sol";
+import "./zeppelin/payment/SplitPayment.sol";
 
 //Perhaps this should inherit from multisig as well?
+
 contract OPAC is Ownable {
   using SafeMath for uint256;
 
@@ -99,7 +98,7 @@ contract OPAC is Ownable {
 
 
 // =================================================================================================================
-//                                      OPAC Crowdsale Iterface
+//                                      OPAC Iterface
 // =================================================================================================================
 
 /**
@@ -138,24 +137,26 @@ function () public payable
   mEscrowWallet.transfer(msg.value);
 }
 
+//TODO: Add generic execute function for firebase --> then function names can be passed through the ABI
+
 // =================================================================================================================
 //                                      OPAC Crowdsale Iterface
 // =================================================================================================================
 
-/* function getNumberOfShareeholders()
+function getNumberOfShareholders()
 {
 
 }
 
 function getTotalAmountFunded()
 {
-  //
+
 }
 
 function getTotalFundsReleased()
 {
-  // loop through mMilestones, and return sum of all COMPLETE milestones
-} */
+
+}
 
 function createCrowdsale(uint256 _startTime, uint256 _endTime, uint256 _rate, uint256 _goal, uint256 _cap)
 onlyOwner
@@ -166,7 +167,7 @@ internal returns(CRWNRR_Crowdsale)
 }
 
 function buyTokens(address shareholderTokenWallet)
-public payable
+external payable
 {
   require(msg.sender != address(0));
   require(msg.value > 0);

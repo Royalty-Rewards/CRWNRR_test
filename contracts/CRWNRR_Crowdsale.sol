@@ -1,9 +1,9 @@
 pragma solidity ^0.4.18;
 
-import "zeppelin-solidity/contracts/crowdsale/CappedCrowdsale.sol";
-import "zeppelin-solidity/contracts/crowdsale/FinalizableCrowdsale.sol";
-import "zeppelin-solidity/contracts/crowdsale/RefundVault.sol";
-import "zeppelin-solidity/contracts/crowdsale/Crowdsale.sol";
+import "./zeppelin/crowdsale/CappedCrowdsale.sol";
+import "./zeppelin/crowdsale/FinalizableCrowdsale.sol";
+import "./zeppelin/crowdsale/RefundVault.sol";
+import "./zeppelin/crowdsale/Crowdsale.sol";
 import "./CRWNRR_Token.sol";
 
 contract CRWNRR_Crowdsale is CappedCrowdsale{

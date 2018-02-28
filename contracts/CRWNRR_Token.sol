@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import 'zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import './zeppelin/token/ERC20/MintableToken.sol';
 import "./ConvertLib.sol";
 
 contract CRWNRR_Token is MintableToken {

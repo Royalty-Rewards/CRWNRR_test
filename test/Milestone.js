@@ -68,7 +68,7 @@ contract('Milestone', function (accounts) {
     let voted2 =  await milestone.vote(accounts[2], true);
     assert.equal(voted.logs[0].event, "Voted");
     assert.equal(voted2.logs[0].event, "Voted");
-    let yesWeight =  await milestone.getConsensusPercentageComplete.call();
+    let yesWeight =  await milestone.getProgress.call();
     assert.equal(yesWeight, 50);
     let voted3 =  await milestone.vote(accounts[3], true);
     assert.equal(voted3.logs[0].event, "Voted");

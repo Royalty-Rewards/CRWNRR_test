@@ -6,6 +6,10 @@ require('babel-polyfill');
 const BigNumber = web3.BigNumber;
 const EVMRevert = "revert";
 let goal = 500;
+const INACTIVE = 0;
+const INPROGRESS = 1;
+const VERIFICATION = 2;
+const COMPLETE = 3;
 
 var Milestone = artifacts.require('./contracts/Milestone.sol');
 
@@ -38,45 +42,42 @@ contract('Milestone', function (accounts) {
     await milestone.setConsensusMilestone(shareholders);
     let stage =  await milestone.getStage.call();
     stage = stage.toNumber();
-    //verify that milestone state == INACTIVE
-    assert.equal(stage, 0);
+    assert.equal(stage, INACTIVE);
+
     let numShareholders =  await milestone.getNumberOfShareholders.call();
     numShareholders = numShareholders.toNumber();
-    //verify number of shareholders
     assert.equal(numShareholders, 4);
-    let totalShares =  await milestone.calculateTotalShares.call();
-    totalShares = totalShares.toNumber();
-    //verify total shares (sum of shareholder balances)
+
+    let totalShares =  await milestone.getTotalShares.call();
     assert.equal(totalShares, 4000000000000000000000000);
-    let weight =  await milestone.getShareholderWeight.call(accounts[1]);
-    weight = weight.toNumber();
-    //verify voting weight of account[1]
-    assert.equal(weight, 25);
+    let individualShares =  await milestone.getNumberOfSharesBelongingTo.call(accounts[1]);
+    individualShares = individualShares.toNumber();
+    totalShares = totalShares.toNumber();
+    let weight = individualShares / totalShares;
+    assert.equal(weight, 0.25);
 
     let started =  await milestone.startProgress();
-    //check milestone state == INPROGRESS
     let isInProgress =  await milestone.getStage.call();
     isInProgress = isInProgress.toNumber();
-    assert.equal(isInProgress, 1);
+    assert.equal(isInProgress, INPROGRESS);
 
     let verifiable =  await milestone.beginVerification();
     let isVerifiable =  await milestone.getStage.call();
     isVerifiable = isVerifiable.toNumber();
-    assert.equal(isVerifiable, 2);
+    assert.equal(isVerifiable, VERIFICATION);
 
     let voted =  await milestone.vote(accounts[1], true);
     let voted2 =  await milestone.vote(accounts[2], true);
     assert.equal(voted.logs[0].event, "Voted");
     assert.equal(voted2.logs[0].event, "Voted");
-    let yesWeight =  await milestone.getProgress.call();
-    assert.equal(yesWeight, 50);
+    let totalYesVotes =  await milestone.getTotalVotes.call(true);
+    totalYesVotes = totalYesVotes.toNumber();
+    let yesWeight = totalYesVotes / totalShares;
+    assert.equal(yesWeight, 0.5);
+
     let voted3 =  await milestone.vote(accounts[3], true);
     assert.equal(voted3.logs[0].event, "Voted");
     assert.equal(voted3.logs[1].event, "MilestoneComplete");
   });
 
 });
-
-function ether (n) {
-  return new web3.BigNumber(web3.toWei(n, 'ether'));
-}

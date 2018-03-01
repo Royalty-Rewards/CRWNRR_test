@@ -1,777 +1,211 @@
-import ether from './zeppelin/helpers/ether'
-import {advanceBlock} from './zeppelin/helpers/advanceToBlock'
-import {increaseTimeTo, duration} from './zeppelin/helpers/increaseTime'
-import latestTime from './zeppelin/helpers/latestTime'
-import EVMThrow from './zeppelin/helpers/EVMThrow'
+require('babel-register');
+require('babel-polyfill');
 
-const utils = require('./zeppelin/helpers/Utils');
-
-const BigNumber = web3.BigNumber
+import ether from './helpers/ether';
+import { advanceBlock } from './helpers/advanceToBlock';
+import { increaseTimeTo, duration } from './helpers/increaseTime';
+import latestTime from './helpers/latestTime';
+import EVMRevert from './helpers/EVMRevert';
 
 const should = require('chai')
-    .use(require('chai-as-promised'))
-    .use(require('chai-bignumber')(BigNumber))
-    .should()
-
-const SirinCrowdsale = artifacts.require('./contracts/CRWNRR_Crowdsale.sol')
-const RefundVault = artifacts.require('./contracts/zeppelin/crowdsale/RefundVault.sol')
-const SirinCrowdsale = artifacts.require('./contracts/CRWNRR_Token.sol')
-
-contract('CRWNRR_Crowdsale', function([_, investor, owner, wallet, walletTeam, walletOEM, walletBounties, walletReserve]) {
-
-    const value = ether(1)
-
-    before(async function() {
-        //Advance to the next block to correctly read time in the solidity "now" function interpreted by testrpc
-        await advanceBlock()
-    })
-    beforeEach(async function() {
-        this.startTime = latestTime() + duration.weeks(1);
-        this.endTime = this.startTime + duration.weeks(1)
-        this.afterEndTime = this.endTime + duration.seconds(1)
-
-        this.token = await SirinSmartToken.new({from: owner});
-        this.refundVault = await RefundVault.new(wallet, this.token.address,{from: owner});
-
-        this.crowdsale = await SirinCrowdsale.new(this.startTime,
-            this.endTime,
-            wallet,
-            walletTeam,
-            walletOEM,
-            walletBounties,
-            walletReserve,
-            this.token.address,
-            this.refundVault.address,
-            {
-                from: owner
-            })
-
-        await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-        await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-        await this.crowdsale.claimTokenOwnership({from: owner})
-        await this.crowdsale.claimRefundVaultOwnership({from: owner})
-
-    })
-
-    describe('Rate Mechanism', function() {
-
-        beforeEach(async function() {
-            await increaseTimeTo(this.startTime)
-        })
-
-        it('Should be on day 1 - 1000 ', async function() {
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 1000);
-        });
-
-        it('Should be on day 2 - 950 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(1));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 950);
-        });
-
-        it('Should be on day 3 - 900 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(2));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 900);
-        });
-
-        it('Should be on day 4 - 855 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(3));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 855);
-        });
-
-        it('Should be on day 5 - 810 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(4));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 810);
-        });
-
-        it('Should be on day 6 - 770 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(5));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 770);
-        });
-
-        it('Should be on day 7 - 730 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(6));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 730);
-        });
-
-        it('Should be on day 8 - 690 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(7));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 690);
-        });
-
-        it('Should be on day 9 - 650 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(8));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 650);
-        });
-
-        it('Should be on day 10 - 615 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(9));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 615);
-        });
-
-        it('Should be on day 11 - 580 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(10));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 580);
-        });
-
-        it('Should be on day 12 - 550 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(11));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 550);
-        });
-
-        it('Should be on day 13 - 525 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(12));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 525);
-        });
-
-        it('Should be on day 14 - 500 ', async function() {
-            await increaseTimeTo(this.startTime + duration.days(13));
-            let rate = await this.crowdsale.getRate.call()
-            assert.equal(rate, 500);
-        });
-    })
-
-    describe('Token destroy', function() {
-
-        it('should not allow destroy before after finalize', async function() {
-
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({
-                value: value,
-                from: investor
-            })
-
-            try {
-                await this.token.destroy(investor, 20, {from: investor});
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should allow destroy after finalize', async function() {
-
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({
-                value: value,
-                from: investor
-            })
-
-            await increaseTimeTo(this.afterEndTime)
-            await this.crowdsale.finalize({
-                from: owner
-            })
-
-            await this.token.destroy(investor, 20, {from: investor});
-        })
-    })
-
-    describe('Token transfer', function() {
-
-        it('should not allow transfer before after finalize', async function() {
-
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({
-                value: value,
-                from: investor
-            })
-
-            try {
-                await this.token.transfer(walletOEM, 1, {
-                    from: investor
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should allow transfer after finalize', async function() {
-
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({
-                value: value,
-                from: investor
-            })
-
-            await increaseTimeTo(this.afterEndTime)
-            await this.crowdsale.finalize({
-                from: owner
-            })
-
-            await this.token.transfer(walletOEM, 1, {
-                from: walletBounties
-            });
-        })
-    })
-
-    describe('Finalize allocation', function() {
-
-        beforeEach(async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({
-                value: value,
-                from: investor
-            })
-
-            await increaseTimeTo(this.afterEndTime)
-            await this.crowdsale.finalize({
-                from: owner
-            })
-
-            this.totalSupply = await this.token.totalSupply()
-        })
-
-        it('Allocate Team token amount as 10% of the total supply', async function() {
-            const expectedTeamTokenAmount = this.totalSupply.mul(0.1);
-            let walletTeamBalance = await this.token.balanceOf(walletTeam);
-
-            walletTeamBalance.should.be.bignumber.equal(expectedTeamTokenAmount);
-        })
-
-        it('Allocate OEM token amount as 10% of the total supply', async function() {
-            const expectedOEMTokenAmount = this.totalSupply.mul(0.1);
-            let OEMTeamBalance = await this.token.balanceOf(walletOEM);
-
-            OEMTeamBalance.should.be.bignumber.equal(expectedOEMTokenAmount);
-        })
-
-        it('Allocate professional fees and Bounties token amount as 5% of the total supply', async function() {
-            const expectedBountiesTokenAmount = this.totalSupply.mul(0.05);
-            let walletTeamBalance = await this.token.balanceOf(walletBounties);
-
-            walletTeamBalance.should.be.bignumber.equal(expectedBountiesTokenAmount);
-        })
-
-        it('Allocate Reserve token amount as 35% of the total supply', async function() {
-            const expectedReserveTokenAmount = this.totalSupply.mul(0.35);
-            let walletTeamBalance = await this.token.balanceOf(walletReserve);
-
-            walletTeamBalance.should.be.bignumber.equal(expectedReserveTokenAmount);
-        })
-
-        it('should set finalized true value', async function() {
-            assert.equal(await this.crowdsale.isFinalized(), true);
-        })
-
-        it('should set token owner to crowdsale owner', async function() {
-
-            await this.token.claimOwnership({
-                from: owner
-            })
-
-            let tokenOwner = await this.token.owner();
-            assert.equal(tokenOwner, owner);
-        })
-
-        it('should set vault owner to crowdsale owner', async function() {
-
-            await this.refundVault.claimOwnership({
-                from: owner
-            })
-
-            let tokenOwner = await this.refundVault.owner();
-            assert.equal(tokenOwner, owner);
-        })
-
-        it('should set vault state to \'Refunding\'', async function() {
-            let stateRefunding = "1";
-            let state = await this.refundVault.state();
-            assert.equal(state, stateRefunding);
-        })
-    })
-
-    describe('Grant tokens', function() {
-
-        it('should grant by owner', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.addUpdateGrantee(investor, 100, {
-                from: owner
-            })
-            let total = await this.crowdsale.presaleGranteesMap(investor)
-            assert(total == 100, "grant has failed");
-        })
-
-        it('should not grant by none-owner', async function() {
-            try {
-                await increaseTimeTo(this.startTime)
-                await this.crowdsale.addUpdateGrantee(investor, 100, {
-                    from: investor
-                });
-                assert(false, "a none owner granted successfully");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not be before crowdsale time', async function() {
-            try {
-                await increaseTimeTo(this.startTime - duration.days(1))
-                await this.crowdsale.addUpdateGrantee(investor, 100, {
-                    from: owner
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not be after crowdsale time', async function() {
-            try {
-                await increaseTimeTo(this.afterEndTime)
-                await this.crowdsale.addUpdateGrantee(investor, 100, {
-                    from: owner
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not grant to address \'0x0\'', async function() {
-            try {
-                await increaseTimeTo(this.startTime)
-                await this.crowdsale.addUpdateGrantee('0x0', 100, {
-                    from: owner
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not grant value \'0\'', async function() {
-            try {
-                await increaseTimeTo(this.startTime)
-                await this.crowdsale.addUpdateGrantee(investor, 0, {
-                    from: owner
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not grant to more than MAX_GRANTEE', async function() {
-            try {
-                let max_grantees = await this.crowdsale.MAX_TOKEN_GRANTEES()
-                await increaseTimeTo(this.startTime)
-                for (let i = 0; i <= max_grantees; i++) {
-                    let address = "0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b750" + i
-                    await this.crowdsale.addUpdateGrantee(address, 100, {
-                        from: owner
-                    });
-                }
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should update a grantee', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.addUpdateGrantee(investor, 100, {
-                from: owner
-            })
-            await this.crowdsale.addUpdateGrantee(investor, 50, {
-                from: owner
-            })
-            let total = await this.crowdsale.presaleGranteesMap(investor);
-            assert(total == 50, "update has failed");
-        })
-
-        it('should remove a grantee by owner', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.addUpdateGrantee(investor, 100, {
-                from: owner
-            })
-            await this.crowdsale.deleteGrantee(investor, {
-                from: owner
-            });
-            let total = await this.crowdsale.presaleGranteesMap(investor);
-            assert(total == 0, "failed to delete grantee by owner");
-
-        })
-
-        it('should not remove a grantee by none-owner', async function() {
-            try {
-                await increaseTimeTo(this.startTime)
-                await this.crowdsale.addUpdateGrantee(investor, 100, {
-                    from: owner
-                })
-                await this.crowdsale.deleteGrantee(investor, {
-                    from: investor
-                });
-                let total = await this.crowdsale.presaleGranteesMap(investor);
-                assert(false, "didnt throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not remove address 0x0', async function() {
-            try {
-                await increaseTimeTo(this.startTime)
-                await this.crowdsale.addUpdateGrantee(investor, 100, {
-                    from: owner
-                })
-                await this.crowdsale.deleteGrantee("0x0", {
-                    from: owner
-                });
-                assert(total == 0, "didnt throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should create remove event', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.addUpdateGrantee(investor, 100, {
-                from: owner
-            })
-            const {
-                logs
-            } = await this.crowdsale.deleteGrantee(investor, {
-                from: owner
-            })
-            const event = logs.find(e => e.event === "GrantDeleted")
-            should.exist(event)
-        })
-
-        it('should create an add event', async function() {
-            await increaseTimeTo(this.startTime)
-            const {
-                logs
-            } = await this.crowdsale.addUpdateGrantee(investor, 100, {
-                from: owner
-            });
-            const event = logs.find(e => e.event === "GrantAdded")
-            should.exist(event)
-        })
-
-        it('should create an update event', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.addUpdateGrantee(investor, 100, {
-                from: owner
-            });
-            const {
-                logs
-            } = await this.crowdsale.addUpdateGrantee(investor, 50, {
-                from: owner
-            });
-            const event = logs.find(e => e.event === "GrantUpdated")
-            should.exist(event)
-        })
-
-        it('should allocate token as expected', async function() {
-            await increaseTimeTo(this.startTime)
-            let max_grantees = await this.crowdsale.MAX_TOKEN_GRANTEES()
-            for (let i = 0; i < max_grantees; i++) {
-                let address = "0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b750" + i
-                await this.crowdsale.addUpdateGrantee(address, 100, {
-                    from: owner
-                });
-            }
-
-            await increaseTimeTo(this.afterEndTime)
-            await this.crowdsale.finalize({
-                from: owner
-            })
-            for (let i = 0; i < max_grantees; i++) {
-                let grantee = await this.crowdsale.presaleGranteesMapKeys(i);
-                let granteeVolume = await this.crowdsale.presaleGranteesMap(grantee);
-                let granteeBalance = await this.token.balanceOf(grantee);
-                assert.equal(granteeVolume + "", granteeBalance + "", "failed to allocate")
-            }
-        })
-    })
-
-    describe('Total Found', function() {
-
-        it('should start with zero', async function() {
-            let total = await this.crowdsale.getTotalFundsRaised();
-            assert.equal(total, 0);
-        })
-
-        it('should allow only owner account to call setFiatRaisedConvertedToWei', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.setFiatRaisedConvertedToWei(1, {
-                from: owner
-            });
-            let total = await this.crowdsale.getTotalFundsRaised();
-            total.should.be.bignumber.equal(1);
-        })
-
-        it('should not allow non-owner account to call setFiatRaisedConvertedToWei', async function() {
-            try {
-                await increaseTimeTo(this.startTime)
-                await this.crowdsale.setFiatRaisedConvertedToWei(1, {
-                    from: investor
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should allow to call setFiatRaisedConvertedToWei only during crowdsale is active', async function() {
-            await increaseTimeTo(this.startTime + duration.days(1))
-            await this.crowdsale.setFiatRaisedConvertedToWei(1, {
-                from: owner
-            });
-            let total = await this.crowdsale.getTotalFundsRaised();
-            total.should.be.bignumber.equal(1);
-        })
-
-        it('should not be at before crowdsale time', async function() {
-            try {
-                await increaseTimeTo(this.startTime - duration.days(1))
-                await this.crowdsale.setFiatRaisedConvertedToWei(1, {
-                    from: owner
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should not be at after crowdsale time', async function() {
-            try {
-                await increaseTimeTo(this.afterEndTime)
-                await this.crowdsale.setFiatRaisedConvertedToWei(1, {
-                    from: owner
-                });
-                assert(false, "didn't throw");
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-        })
-
-        it('should total amount be equeal to _weiRasied + _noneEthRaised', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({
-                value: ether(1),
-                from: investor
-            })
-            await this.crowdsale.setFiatRaisedConvertedToWei(ether(1), {
-                from: owner
-            });
-            let total = await this.crowdsale.getTotalFundsRaised();
-
-            total.should.be.bignumber.equal(ether(2));
-        })
-    })
-
-    describe('Constructor Parameters', function() {
-        it('should initilaized with a valid walletTeam adderss', async function() {
-            try {
-                this.token = await SirinSmartToken.new({from: owner});
-                this.refundVault = await RefundVault.new(wallet, this.token.address,{from: owner});
-
-                this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                    this.endTime,
-                    wallet,
-                    0x0,
-                    walletOEM,
-                    walletBounties,
-                    walletReserve,
-                    this.token.address,
-                    this.refundVault.address,
-                    {
-                        from: owner
-                    })
-
-                await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-                await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-                await this.crowdsale.claimTokenOwnership({from: owner})
-                await this.crowdsale.claimRefundVaultOwnership({from: owner})
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-
-            assert(false, "did not throw with invalid walletTeam address")
-        })
-
-        it('should initilaized with a valid walletOEM adderss', async function() {
-            try {
-                this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                    this.endTime,
-                    wallet,
-                    walletTeam,
-                    0x0,
-                    walletBounties,
-                    walletReserve,
-                    this.token.address,
-                    this.refundVault.address,
-                    {
-                        from: owner
-                    })
-
-                await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-                await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-                await this.crowdsale.claimTokenOwnership({from: owner})
-                await this.crowdsale.claimRefundVaultOwnership({from: owner})
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-
-            assert(false, "did not throw with invalid walletOEM address")
-        })
-
-        it('should initilaized with a valid walletBounties adderss', async function() {
-            try {
-                this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                    this.endTime,
-                    wallet,
-                    walletTeam,
-                    walletOEM,
-                    0x0,
-                    walletReserve,
-                    this.token.address,
-                    this.refundVault.address,
-                    {
-                        from: owner
-                    })
-
-                await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-                await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-                await this.crowdsale.claimTokenOwnership({from: owner})
-                await this.crowdsale.claimRefundVaultOwnership({from: owner})
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-            assert(false, "did not throw with invalid walletBounties address")
-        })
-
-        it('should initilaized with a valid walletReserve adderss', async function() {
-            try {
-                this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                    this.endTime,
-                    wallet,
-                    walletTeam,
-                    walletOEM,
-                    walletBounties,
-                    0x0,
-                    this.token.address,
-                    this.refundVault.address,
-                    {
-                        from: owner
-                    })
-
-                await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-                await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-                await this.crowdsale.claimTokenOwnership({from: owner})
-                await this.crowdsale.claimRefundVaultOwnership({from: owner})
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-
-            assert(false, "did not throw with invalid walletReserve address")
-        })
-
-        it('should initilaized with a valid token adderss', async function() {
-            try {
-                this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                    this.endTime,
-                    wallet,
-                    walletTeam,
-                    walletOEM,
-                    walletBounties,
-                    walletReserve,
-                    0x0,
-                    this.refundVault.address,
-                    {
-                        from: owner
-                    })
-
-                await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-                await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-                await this.crowdsale.claimTokenOwnership({from: owner})
-                await this.crowdsale.claimRefundVaultOwnership({from: owner})
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-
-            assert(false, "did not throw with invalid walletReserve address")
-        })
-
-        it('should initilaized with a valid refundVault adderss', async function() {
-            try {
-                await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-
-                this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                    this.endTime,
-                    wallet,
-                    walletTeam,
-                    walletOEM,
-                    walletBounties,
-                    walletReserve,
-                    this.token.address,
-                    0x0,
-                    {
-                        from: owner
-                    })
-                await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-                await this.crowdsale.claimTokenOwnership({from: owner})
-                await this.crowdsale.claimRefundVaultOwnership({from: owner})
-            } catch (error) {
-                return utils.ensureException(error);
-            }
-
-            assert(false, "did not throw with invalid walletReserve address")
-        })
-
-        it('should initilaized with a valid parametrs', async function() {
-            this.crowdsale = await SirinCrowdsale.new(this.startTime,
-                this.endTime,
-                wallet,
-                walletTeam,
-                walletOEM,
-                walletBounties,
-                walletReserve,
-                this.token.address,
-                this.refundVault.address,
-                {
-                    from: owner
-                })
-
-            await this.token.transferOwnership(this.crowdsale.address, {from: owner});
-            await this.refundVault.transferOwnership(this.crowdsale.address, {from: owner});
-
-            await this.crowdsale.claimTokenOwnership({from: owner})
-            await this.crowdsale.claimRefundVaultOwnership({from: owner})
-        })
-
-        it('should create fiat event after update', async function() {
-            await increaseTimeTo(this.startTime)
-            await this.crowdsale.sendTransaction({value: ether(1),from: investor})
-            const {logs} = await this.crowdsale.setFiatRaisedConvertedToWei(ether(1), {from: owner});
-            const event = logs.find(e => e.event === "FiatRaisedUpdated")
-            should.exist(event)
-        })
-    })
-
-    describe('vault ownership', function() {
-        it('crowdsale is vaults owner', async function() {
-            assert(await this.refundVault.owner() == await this.crowdsale.address, "RefundVault is not crowdsale owner")
-        })
-    })
-})
+  .use(require('chai-as-promised'))
+  .use(require('chai-bignumber')(web3.BigNumber))
+  .should();
+
+const Crowdsale = artifacts.require('CRWNRR_Crowdsale');
+const SimpleToken = artifacts.require('CRWNRR_Token');
+const SimpleWallet = artifacts.require('SimpleSavingsWallet');
+
+// contract('CRWNRR_Crowdsale', function ([_, investor, wallet, purchaser]) {
+contract('CRWNRR_Crowdsale', function (accounts) {
+  var investor = accounts[0];
+  var wallet = accounts[1];
+  var purchaser = accounts[2];
+  const rate = new web3.BigNumber(1);
+  const value = web3.toWei(42, 'ether');
+  const tokenSupply = new web3.BigNumber('1e22');
+  const expectedTokenAmount = rate.mul(value);
+  let balance;
+  const initialRate = new web3.BigNumber(9166);
+  const finalRate = new web3.BigNumber(5500);
+  const rateAtTime150 = new web3.BigNumber(9166);
+  const rateAtTime300 = new web3.BigNumber(9165);
+  const rateAtTime1500 = new web3.BigNumber(9157);
+  const rateAtTime30 = new web3.BigNumber(9166);
+  const rateAtTime150000 = new web3.BigNumber(8257);
+  const rateAtTime450000 = new web3.BigNumber(6439);
+  beforeEach(async function () {
+    await advanceBlock();
+    this.startTime = latestTime() + duration.weeks(1);
+    this.closingTime = this.startTime + duration.weeks(1);
+    this.afterClosingTime = this.closingTime + duration.seconds(1);
+    this.wallet = await SimpleWallet.new();
+    this.token = await SimpleToken.new();
+
+    this.crowdsale = await CRWNRR_Crowdsale.new(this.startTime, this.closingTime, wallet, this.token, initialRate, finalRate);
+    // await this.token.transfer(this.crowdsale.address, tokenSupply);
+  });
+
+  describe('Crowdsale: accepting payments', function () {
+    it('should accept payments', async function () {
+      // await this.crowdsale.send(value).should.be.fulfilled;
+      await this.crowdsale.buyTokens(investor, { value: value, from: purchaser }).should.be.fulfilled;
+    });
+  });
+
+  // describe('Crowdsale: high-level purchase', function () {
+  //   it('should log purchase', async function () {
+  //     const { logs } = await this.crowdsale.sendTransaction({ value: value, from: investor });
+  //     const event = logs.find(e => e.event === 'TokenPurchase');
+  //     should.exist(event);
+  //     event.args.purchaser.should.equal(investor);
+  //     event.args.beneficiary.should.equal(investor);
+  //     event.args.value.should.be.bignumber.equal(value);
+  //     event.args.amount.should.be.bignumber.equal(expectedTokenAmount);
+  //   });
+  //
+  //   it('should assign tokens to sender', async function () {
+  //     await this.crowdsale.sendTransaction({ value: value, from: investor });
+  //     let balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(expectedTokenAmount);
+  //   });
+  //
+  //   it('should forward funds to wallet', async function () {
+  //     const pre = web3.eth.getBalance(wallet);
+  //     await this.crowdsale.sendTransaction({ value, from: investor });
+  //     const post = web3.eth.getBalance(wallet);
+  //     post.minus(pre).should.be.bignumber.equal(value);
+  //   });
+  // });
+
+  // describe('Crowdsale: low-level purchase', function () {
+  //   it('should log purchase', async function () {
+  //     const { logs } = await this.crowdsale.buyTokens(investor, { value: value, from: purchaser });
+  //     const event = logs.find(e => e.event === 'TokenPurchase');
+  //     should.exist(event);
+  //     event.args.purchaser.should.equal(purchaser);
+  //     event.args.beneficiary.should.equal(investor);
+  //     event.args.value.should.be.bignumber.equal(value);
+  //     event.args.amount.should.be.bignumber.equal(expectedTokenAmount);
+  //   });
+  //
+  //   it('should assign tokens to beneficiary', async function () {
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     const balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(expectedTokenAmount);
+  //   });
+  //
+  //   it('should forward funds to wallet', async function () {
+  //     const pre = web3.eth.getBalance(wallet);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     const post = web3.eth.getBalance(wallet);
+  //     post.minus(pre).should.be.bignumber.equal(value);
+  //   });
+  // });
+  //
+  // describe('IncreasingPriceCrowdsale: rate during crowdsale should change at a fixed step every block', async function () {
+  //
+  //   it('at start', async function () {
+  //     await increaseTimeTo(this.startTime);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(initialRate));
+  //   });
+  //
+  //   it('at time 150', async function () {
+  //     await increaseTimeTo(this.startTime + 150);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(rateAtTime150));
+  //   });
+  //
+  //   it('at time 300', async function () {
+  //     await increaseTimeTo(this.startTime + 300);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(rateAtTime300));
+  //   });
+  //
+  //   it('at time 1500', async function () {
+  //     await increaseTimeTo(this.startTime + 1500);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(rateAtTime1500));
+  //   });
+  //
+  //   it('at time 30', async function () {
+  //     await increaseTimeTo(this.startTime + 30);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(rateAtTime30));
+  //   });
+  //
+  //   it('at time 150000', async function () {
+  //     await increaseTimeTo(this.startTime + 150000);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(rateAtTime150000));
+  //   });
+  //
+  //   it('at time 450000', async function () {
+  //     await increaseTimeTo(this.startTime + 450000);
+  //     await this.crowdsale.buyTokens(investor, { value, from: purchaser });
+  //     balance = await this.token.balanceOf(investor);
+  //     balance.should.be.bignumber.equal(value.mul(rateAtTime450000));
+  //   });
+  // });
+  //
+  // it('FinalizableCrowdsale: cannot be finalized before ending', async function () {
+  //   await this.crowdsale.finalize({ from: owner }).should.be.rejectedWith(EVMRevert);
+  // });
+  //
+  // it('FinalizableCrowdsale: cannot be finalized by third party after ending', async function () {
+  //   await increaseTimeTo(this.afterClosingTime);
+  //   await this.crowdsale.finalize({ from: thirdparty }).should.be.rejectedWith(EVMRevert);
+  // });
+  //
+  // it('FinalizableCrowdsale: can be finalized by owner after ending', async function () {
+  //   await increaseTimeTo(this.afterClosingTime);
+  //   await this.crowdsale.finalize({ from: owner }).should.be.fulfilled;
+  // });
+  //
+  // it('FinalizableCrowdsale: cannot be finalized twice', async function () {
+  //   await increaseTimeTo(this.afterClosingTime);
+  //   await this.crowdsale.finalize({ from: owner });
+  //   await this.crowdsale.finalize({ from: owner }).should.be.rejectedWith(EVMRevert);
+  // });
+  //
+  // it('FinalizableCrowdsale: logs finalized', async function () {
+  //   await increaseTimeTo(this.afterClosingTime);
+  //   const { logs } = await this.crowdsale.finalize({ from: owner });
+  //   const event = logs.find(e => e.event === 'Finalized');
+  //   should.exist(event);
+  // });
+  //
+  // it('TimedCrowdsale: should be ended only after end', async function () {
+  //   let ended = await this.crowdsale.hasClosed();
+  //   ended.should.equal(false);
+  //   await increaseTimeTo(this.afterClosingTime);
+  //   ended = await this.crowdsale.hasClosed();
+  //   ended.should.equal(true);
+  // });
+  //
+  // describe('TimedCrowdsale: accepting payments', function () {
+  //   it('should reject payments before start', async function () {
+  //     await this.crowdsale.send(value).should.be.rejectedWith(EVMRevert);
+  //     await this.crowdsale.buyTokens(investor, { from: purchaser, value: value }).should.be.rejectedWith(EVMRevert);
+  //   });
+  //
+  //   it('should accept payments after start', async function () {
+  //     await increaseTimeTo(this.openingTime);
+  //     await this.crowdsale.send(value).should.be.fulfilled;
+  //     await this.crowdsale.buyTokens(investor, { value: value, from: purchaser }).should.be.fulfilled;
+  //   });
+  //
+  //   it('should reject payments after end', async function () {
+  //     await increaseTimeTo(this.afterClosingTime);
+  //     await this.crowdsale.send(value).should.be.rejectedWith(EVMRevert);
+  //     await this.crowdsale.buyTokens(investor, { value: value, from: purchaser }).should.be.rejectedWith(EVMRevert);
+  //   });
+  // });
+});

@@ -1,6 +1,7 @@
 pragma solidity ^0.4.18;
 
 import "../math/SafeMath.sol";
+import "../ownership/Ownable.sol";
 
 
 /**
@@ -8,7 +9,7 @@ import "../math/SafeMath.sol";
  * @dev Base contract that supports multiple payees claiming funds sent to this contract
  * according to the proportion they own.
  */
-contract SplitPayment {
+contract SplitPayment is Ownable{
   using SafeMath for uint256;
 
   uint256 public totalShares = 0;
@@ -37,8 +38,10 @@ contract SplitPayment {
   /**
    * @dev Claim your share of the balance.
    */
-  function claim() public {
-    address payee = msg.sender;
+  function claim(address _shareholder)
+  onlyOwner
+  public {
+    address payee = _shareholder;
 
     require(shares[payee] > 0);
 

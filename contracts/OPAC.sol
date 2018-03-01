@@ -8,7 +8,7 @@ import "./MultiSigWallet.sol";
 import "./zeppelin/math/SafeMath.sol";
 import "./zeppelin/ownership/Ownable.sol";
 import "./zeppelin/payment/SplitPayment.sol";
-
+import "./CRWNRR_Token.sol";
 //Perhaps this should inherit from multisig as well?
 
 contract OPAC is Ownable {
@@ -38,6 +38,7 @@ contract OPAC is Ownable {
   }
 
   mapping(address => OPACOwner) mOwners;
+  address[] mOwnerIndex;
   mapping (address => bool) public isOwner;
 
   mapping(address => OPACShareholder) mShareholders;
@@ -54,7 +55,7 @@ contract OPAC is Ownable {
   uint curActiveMilestone = 0;
   uint totalMilestones = 0;
   mapping(uint => OPACMilestone) mMilestones;
-
+  CRWNRR_Token mToken;
   CRWNRR_Crowdsale mCrowdsale;
 
   // =================================================================================================================
@@ -123,6 +124,7 @@ function OPAC(address[] opacOwnerWallets, uint[] sharePercentages)
       mOwners[opacOwnerWallets[i]].wallet = new MultiSigWallet(walletOwnerAddr, 1);
       mOwners[opacOwnerWallets[i]].shares = sharePercentages[i];
       isOwner[opacOwnerWallets[i]] = true;
+      mOwnerIndex.push(opacOwnerWallets[i]);
     }
   }
 }
@@ -158,12 +160,12 @@ function getTotalFundsReleased()
 
 }
 
-function createCrowdsale(uint256 _startTime, uint256 _endTime, uint256 _rate, uint256 _goal, uint256 _cap)
+function createCrowdsale(uint256 _startTime, uint256 _endTime, uint256 _goal, uint256 _initialRate, uint256 _finalRate)
 onlyOwner
 internal returns(CRWNRR_Crowdsale)
 {
-
-  return new CRWNRR_Crowdsale(_startTime, _endTime, _rate, _goal, _cap, mEscrowWallet);
+  mToken = new CRWNRR_Token(88888888);
+  return new CRWNRR_Crowdsale(_startTime, _endTime, mEscrowWallet, mToken, _initialRate, _finalRate);
 }
 
 function buyTokens(address shareholderTokenWallet)
@@ -173,12 +175,10 @@ external payable
   require(msg.value > 0);
   if(!isShareholder[msg.sender])
   {
-    //create new wallet for shareholder
-    //full ownership given to shareholder after crowdsale finishes)
+    //create new wallet token for shareholder
     address[] walletOwnerAddr;
     walletOwnerAddr.push(msg.sender);
-    walletOwnerAddr.push(address(this));
-    mShareholders[msg.sender].wallet = new MultiSigWallet(walletOwnerAddr, 2);
+    mShareholders[msg.sender].wallet = new MultiSigWallet(walletOwnerAddr, 1);
     mShareholders[msg.sender].contribution = msg.value;
     isShareholder[msg.sender] = true;
   }
@@ -229,32 +229,32 @@ external payable
 
   function getMilestoneStage(uint _milestoneIndex)
   milestoneExists(_milestoneIndex)
-  view returns(uint)
+  public view returns(uint)
   {
     return mMilestones[curActiveMilestone].milestone.getStage();
   }
 
-  function getCurrentMilestoneProgress()
+  /* function getCurrentMilestoneProgress()
   milestoneExists(curActiveMilestone)
   view returns(uint)
   {
     return mMilestones[curActiveMilestone].milestone.getProgress();
-  }
+  } */
 
   function getNumberOfMilestones()
-  view returns(uint)
+  public view returns(uint)
   {
       return totalMilestones;
   }
 
   function getCurrentMilestone()
-  view returns(uint)
+  public view returns(uint)
   {
     return curActiveMilestone;
   }
 
   function totalMilestonesComplete()
-  view returns(uint)
+  public view returns(uint)
   {
     return curActiveMilestone;
   }
@@ -295,6 +295,12 @@ external payable
       curActiveMilestone = completedMilestone.add(1);
       //withdraw amount from escrow wallet, and distribute with payment splitter
       uint transactionId = mEscrowWallet.submitTransaction(address(mPaymentSplitter), reward, bytes(milestoneName));
+      //transfer rewards to each owner accounts
+      for(uint i = 0; i < mOwnerIndex.length; i++)
+      {
+        //This might be wrong, as the shareholder should pay for the transaction...
+        mPaymentSplitter.claim(mOwnerIndex[i]);
+      }
       //Fire milestone complete event... Now, each person receiving rewards must claim their funds..
       MilestoneComplete(transactionId, milestoneName);
       //TODO: Check any for royalties that should be paid out as a result of milestone completion?

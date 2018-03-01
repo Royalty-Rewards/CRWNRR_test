@@ -142,23 +142,6 @@ contract Milestone is Ownable{
     return true;
   }
   /**
-   * @dev function to set the milestone type as discrete
-   * @param inGoal discrete sales goal.
-   * @return A boolean that indicates if the operation was successful.
-   */
-  function setDiscreteMilestone(uint256 inGoal)
-    onlyOwner
-    isMilestoneType(MilestoneType.UNKNOWN)
-    atStage(Stages.INACTIVE)
-    public returns(bool)
-  {
-    require(goal == 0);
-    require(inGoal > 0);
-    mType = MilestoneType.DISCRETE;
-    goal = inGoal;
-    return true;
-  }
-  /**
    * @dev function add shareholder to consensus milestone
    * @param shareholderAddress address of new shareholder.
    * @return A boolean that indicates if the operation was successful.
@@ -176,6 +159,23 @@ contract Milestone is Ownable{
     mShareholderIndex.push(shareholderAddress);
     mShareholders[shareholderAddress] = shareholder(false, VoteStates.UNKNOWN, shareholderAddress.balance);
     isShareholder[shareholderAddress] = true;
+    return true;
+  }
+  /**
+   * @dev function to set the milestone type as discrete
+   * @param inGoal discrete sales goal.
+   * @return A boolean that indicates if the operation was successful.
+   */
+  function setDiscreteMilestone(uint256 inGoal)
+    onlyOwner
+    isMilestoneType(MilestoneType.UNKNOWN)
+    atStage(Stages.INACTIVE)
+    public returns(bool)
+  {
+    require(goal == 0);
+    require(inGoal > 0);
+    mType = MilestoneType.DISCRETE;
+    goal = inGoal;
     return true;
   }
   /**
@@ -252,67 +252,75 @@ contract Milestone is Ownable{
    * @return uint equal to number of shareholders
    */
   function getNumberOfShareholders()
-  onlyOwner
-  public view returns(uint)
+  public view
+  returns(uint count)
   {
-    return uint(mShareholderIndex.length);
+      return mShareholderIndex.length;
+  }
+  /**
+   * @dev function to get total number of shares owned by milestone shareholders
+   * @return uint256 equal to total shares
+   */
+  function getTotalShares()
+  isMilestoneType(MilestoneType.CONSENSUS)
+  public view
+  returns(uint256)
+  {
+    uint256 totalShares = 0;
+    for (uint i = 0; i < mShareholderIndex.length; i++)
+    {
+        uint256 shareholderBalance = mShareholderIndex[i].balance;
+        totalShares = totalShares.add(shareholderBalance);
+    }
+    return totalShares;
   }
   /**
    * @dev function to get the voting weight of a shareholder
    * @param shareholderAddress address of shareholder.
    * @return uint256 equal to the voting weight as a percentage.
    */
-  function getShareholderWeight(address shareholderAddress)
+  function getNumberOfSharesBelongingTo(address shareholderAddress)
   onlyOwner
   public view returns(uint256)
   {
     uint256 voterBalance = shareholderAddress.balance;
-    uint256 totalShares = calculateTotalShares();
-    uint256 weight = percent(voterBalance, totalShares, 2);
-    return weight;
+    return voterBalance;
   }
   /**
-   * @dev function to get milestone percentage complete
-   * @return uint256 percentage complete
-   */
-  function getProgress()
-  onlyOwner
-  public view returns(uint256)
-  {
-    if(mType == MilestoneType(MilestoneType.DISCRETE))
-    {
-      return getDiscretePercentageComplete();
-    }
-    else if(mType == MilestoneType(MilestoneType.CONSENSUS))
-    {
-      return getConsensusPercentageComplete();
-    }
-  }
-  /**
-   * @dev internal function to get percentage complete of discrete milestone
+   * @dev internal function to get amount sold within this milestone only
    * @return percentage complete
    */
-  function getDiscretePercentageComplete()
+  function getRelativeAmountSold()
   onlyOwner
   isMilestoneType(MilestoneType.DISCRETE)
   internal view returns(uint256)
   {
     uint256 milestoneRange = goal.sub(milestoneBaseAmount);
     uint256 totalSold = amountSold.sub(milestoneBaseAmount);
-    uint256 percentComplete = percent(totalSold, milestoneRange, 2);
-    return percentComplete;
+    return totalSold;
+  }
+  /**
+   * @dev internal function
+   * @return percentage complete
+   */
+  function getRelativeGoal()
+  onlyOwner
+  isMilestoneType(MilestoneType.DISCRETE)
+  internal view returns(uint256)
+  {
+    uint256 milestoneRange = goal.sub(milestoneBaseAmount);
+    return milestoneRange;
   }
   /**
    * @dev internal function to get current percentage of "YES" votes
    * @return percentage complete
    */
-  function getConsensusPercentageComplete()
-  onlyOwner
+  function getTotalVotes(bool voteType)
   isMilestoneType(MilestoneType.CONSENSUS)
-  atStage(Stages.VERIFICATION)
-  internal view returns(uint256)
+  public view returns(uint256)
   {
-    return voteTally[uint(VoteStates.YES)];
+    uint voteTotal = uint(VoteStates(boolToVote[voteType]));
+    return voteTally[voteTotal];
   }
   /**
    * @dev function to report and check sales updates for discrete milestones (checkMilestone is a bad name)
@@ -372,13 +380,16 @@ contract Milestone is Ownable{
       {
         return false;
       }
-      uint256 weight = getShareholderWeight(shareholderAddress);
-      voter.voted = true;
       VoteStates voteType = VoteStates(boolToVote[voteValue]);
       voter.vote = voteType;
-      voteTally[uint(voteType)] = voteTally[uint(voteType)].add(weight);
+      voter.voted = true;
+      voter.weight = shareholderAddress.balance;
+      voteTally[uint(voteType)] = voteTally[uint(voteType)].add(voter.weight);
       Voted(shareholderAddress);
-      if(voteTally[uint(voteType)] > 50)
+      uint256 totalShares = getTotalShares();
+      //divide total shares by 2 to calculate number of shares == 50%
+      uint256 fiftyPercent = totalShares >> 1;
+      if(voteTally[uint(voteType)] > fiftyPercent)
       {
         if(voteType == VoteStates.YES)
         {
@@ -392,35 +403,5 @@ contract Milestone is Ownable{
         }
       }
       return true;
-  }
-  /**
-   * @dev function to get total number of shares owned by milestone shareholders
-   * @return uint256 equal to total shares
-   */
-  function calculateTotalShares()
-  onlyOwner
-  isMilestoneType(MilestoneType.CONSENSUS)
-  public returns(uint256)
-  {
-    uint256 totalShares = 0;
-    for (uint i = 0; i < mShareholderIndex.length; i++)
-    {
-        uint256 shareholderBalance = mShareholderIndex[i].balance;
-        totalShares = totalShares.add(shareholderBalance);
-    }
-    return totalShares;
-  }
-  /**
-   * @dev utility function to calculate percentages using uint256 types
-   * @return uint256 percentage value
-   */
-  function percent(uint numerator, uint denominator, uint precision)
-  pure returns(uint quotient) {
-
-       // caution, check safe-to-multiply here
-      uint _numerator  = numerator * 10 ** (precision+1);
-      // with rounding of last digit
-      uint _quotient =  ((_numerator / denominator) + 5) / 10;
-      return ( _quotient);
   }
 }
